@@ -1,5 +1,5 @@
 export type SaleStatus = "pending" | "sale" | "cancel";
-export type Version = "gamota" | "japan" | "global"; // cập nhật theo enum bạn tạo trong Strapi
+export type Version = "gamota" | "japan" | "global";
 
 export interface Account {
   id: number;
@@ -16,13 +16,14 @@ export interface Account {
   tickets: number;
   resources: string;
   actionPoints: number;
-  commander: string; // hoặc bạn dùng `string[]` nếu xử lý theo blocks
-  legendaryHouse: string; // tương tự như trên
+  commander: string;
+  legendaryHouse: string;
   saleStatus: SaleStatus;
   images: Media[];
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
+  keyRally: boolean;
 }
 
 export interface Media {

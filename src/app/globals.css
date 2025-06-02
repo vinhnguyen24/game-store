@@ -123,3 +123,36 @@
     @apply bg-background text-foreground;
   }
 }
+@keyframes glow {
+  0%,
+  100% {
+    box-shadow: 0 0 8px 2px rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px rgba(255, 215, 0, 1);
+  }
+}
+
+.animate-glow {
+  animation: glow 2s infinite ease-in-out;
+  border: 2px solid gold;
+  color: gold !important;
+  font-weight: 700;
+}
+@keyframes glow-border {
+  0% {
+    box-shadow: 0 0 6px 2px rgba(255, 215, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 12px 4px rgba(255, 215, 0, 1);
+  }
+  100% {
+    box-shadow: 0 0 6px 2px rgba(255, 215, 0, 0.5);
+  }
+}
+
+.border-glow {
+  border: 2px solid gold;
+  animation: glow-border 2s infinite ease-in-out;
+  border-radius: 1rem;
+}

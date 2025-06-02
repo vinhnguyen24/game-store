@@ -15,6 +15,8 @@ import {
 } from "react-icons/fi";
 import Link from "next/link";
 import Image from "next/image";
+import AccountCard from "@/components/AccountCard";
+import accountData from "@/fakeData";
 
 const versionLabels: Record<Version, string> = {
   gamota: "Gamota",
@@ -99,20 +101,22 @@ const HomePage = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const res = await apiFetch<AccountsResponse>("/accounts?populate=*");
+    // const fetchAccounts = async () => {
+    //   try {
+    //     const res = await apiFetch<AccountsResponse>("/accounts?populate=*");
 
-        setAccounts((res.data as Account[]) ?? []);
-      } catch (err) {
-        setError((err as Error).message || "Không thể tải danh sách tài khoản");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    //     setAccounts((res.data as Account[]) ?? []);
+    //   } catch (err) {
+    //     setError((err as Error).message || "Không thể tải danh sách tài khoản");
+    //     console.error(err);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
 
-    fetchAccounts();
+    // fetchAccounts();
+    setLoading(false);
+    setAccounts(accountData);
   }, []);
 
   const filteredAccounts = accounts.filter((account) => {
@@ -169,67 +173,9 @@ const HomePage = () => {
       </div>
 
       {/* Account List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredAccounts.map((account) => (
-          <div
-            key={account.id}
-            className="border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow bg-white"
-          >
-            {/* Status Badge */}
-            <div className="absolute top-2 left-2 bg-white px-2 py-1 rounded flex items-center text-sm">
-              <StatusIcon status={account.saleStatus} />
-              <span className="ml-1">{statusLabels[account.saleStatus]}</span>
-            </div>
-
-            {/* Image Gallery */}
-            {account.images?.length > 0 ? (
-              <AccountImage image={account.images[0]} />
-            ) : (
-              <div className="h-48 bg-gray-200 flex items-center justify-center text-gray-500">
-                <FiImage className="text-3xl mr-2" />
-                <span>Chưa có ảnh</span>
-              </div>
-            )}
-
-            <div className="p-4">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-lg truncate">{account.title}</h3>
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                  {versionLabels[account.version]}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mb-3 text-sm">
-                <div>
-                  <p className="text-gray-500">VIP</p>
-                  <p className="font-semibold">{account.vipLevel}</p>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center mt-4">
-                <div>
-                  <p className="text-gray-500 text-sm">Giá</p>
-                  <p className="text-red-600 font-bold text-xl">
-                    {account.price.toLocaleString()} VND
-                  </p>
-                </div>
-                <Link
-                  href={`/account/${account.id}`}
-                  className={`px-4 py-2 rounded-lg flex items-center ${
-                    account.saleStatus === "sale"
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
-                  aria-disabled={account.saleStatus !== "sale"}
-                >
-                  <FiShoppingCart className="mr-2" />
-                  {account.saleStatus === "sale"
-                    ? "Mua ngay"
-                    : "Không khả dụng"}
-                </Link>
-              </div>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {filteredAccounts.map((account, index) => (
+          <AccountCard account={account} key={index} />
         ))}
       </div>
 

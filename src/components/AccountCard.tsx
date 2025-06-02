@@ -1,0 +1,144 @@
+import { FC } from "react";
+import { Account } from "../types/account";
+import { Heart, Flashlight } from "lucide-react";
+import { RiSpeedFill, RiTicket2Line } from "react-icons/ri";
+import { LuCastle } from "react-icons/lu";
+
+import clsx from "clsx";
+
+interface Props {
+  account: Account;
+}
+
+const AccountCard: FC<Props> = ({ account }) => {
+  const img = account.images?.[0]?.url || "/placeholder.jpg";
+
+  const versionColorMap = {
+    gamota: "bg-orange-600",
+    japan: "bg-red-500",
+    global: "bg-green-600",
+  } as const;
+
+  type VersionKey = keyof typeof versionColorMap;
+
+  const version = account.version as VersionKey;
+  const versionColor = versionColorMap[version] ?? "bg-gray-400";
+
+  const statusLabelMap = {
+    sale: "Đang bán",
+    pending: "Chờ duyệt",
+    cancel: "Đã hủy",
+  } as const;
+
+  type SaleStatus = keyof typeof statusLabelMap;
+
+  function isSaleStatus(status: string): status is SaleStatus {
+    return status === "sale" || status === "pending" || status === "cancel";
+  }
+
+  function getStatusLabel(status: string): string {
+    if (isSaleStatus(status)) {
+      return statusLabelMap[status];
+    }
+    return "Không xác định";
+  }
+
+  const vesionMap = {
+    gamota: "Gamota ⭐",
+    japan: "Nhật Bản",
+    global: "Quốc Tế 🌐",
+  };
+
+  function convertToShortText(num: number): string {
+    const str = num.toString();
+    if (str.includes(".")) {
+      const [integerPart, decimalPart] = str.split(".");
+      return `${integerPart}tr${decimalPart.charAt(0)}`;
+    } else {
+      return `${str}tr`;
+    }
+  }
+
+  return (
+    <div
+      className={clsx(
+        "bg-[#1c1e2f] text-white rounded-xl p-4 shadow-md w-full max-w-xs relative",
+        account.vipLevel === 20 && "border-glow"
+      )}
+    >
+      <div className="relative">
+        <img
+          src={"/images/default-account.jpg"}
+          alt={account.title}
+          className={clsx(
+            "rounded-lg h-40 w-full object-cover",
+            account.vipLevel === 20 && "ring-2 ring-yellow-400"
+          )}
+        />
+        <button className="absolute top-2 right-2 bg-black/40 p-1 rounded-full text-white hover:text-red-500">
+          <Heart size={18} />
+        </button>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <h3 className="text-sm font-semibold leading-snug line-clamp-3">
+          {account.title}
+        </h3>
+
+        <div className="flex flex-wrap gap-2 text-xs mt-1">
+          <span className={clsx("px-2 py-1 rounded-full", versionColor)}>
+            {vesionMap[account.version]}
+          </span>
+          {account.vipLevel === 20 ? (
+            <span className="relative font-cinzel inline-flex items-center px-2 py-1 bg-black text-yellow-400 rounded-full animate-glow">
+              SVIP⭐
+            </span>
+          ) : (
+            account.vipLevel >= 17 && (
+              <span className="relative font-cinzel inline-flex items-center px-2 py-1 bg-red-600 text-xs font-semibold rounded-full animate-fire">
+                VIP {account.vipLevel} 🔥
+              </span>
+            )
+          )}
+
+          {account.keyRally && (
+            <span className="relative inline-flex items-center px-2 py-1 bg-red-600 text-xs font-semibold rounded-full animate-fire inline-flex items-center gap-x-1">
+              Key Rally/ Def 🎯
+            </span>
+          )}
+          {account.vipLevel < 17 && (
+            <span className="px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
+              VIP {account.vipLevel}
+            </span>
+          )}
+          <span className=" px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
+            <RiSpeedFill />
+            {account.speed} days Speed
+          </span>
+          <span className=" px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
+            <RiTicket2Line />
+            {account.tickets} Vé
+          </span>
+          <span className=" px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
+            <LuCastle />
+            {account.legendaryHouse}
+          </span>
+        </div>
+
+        <div className="text-lg font-bold text-yellow-400">
+          {convertToShortText(account.price.toFixed(2))} (VNĐ)
+        </div>
+
+        <div className="text-xs text-gray-400 flex justify-between items-center">
+          <span className="flex items-center gap-1">
+            <Flashlight size={14} />
+            {new Date(account.createdAt).toLocaleDateString()}
+          </span>
+          <span className="italic">{getStatusLabel(account.saleStatus)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AccountCard;
