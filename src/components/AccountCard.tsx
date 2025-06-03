@@ -1,10 +1,10 @@
 import { FC } from "react";
 import { Account } from "../types/account";
-import { Heart, Flashlight } from "lucide-react";
+import { Flashlight } from "lucide-react";
 import { RiSpeedFill, RiTicket2Line } from "react-icons/ri";
 import { LuCastle } from "react-icons/lu";
-
 import clsx from "clsx";
+import { motion } from "framer-motion";
 
 interface Props {
   account: Account;
@@ -60,9 +60,11 @@ const AccountCard: FC<Props> = ({ account }) => {
   }
 
   return (
-    <div
+    <motion.div
+      whileHover={{ scale: 1.05 }}
+      transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className={clsx(
-        "bg-[#1c1e2f] text-white rounded-xl p-4 shadow-md w-full max-w-xs relative",
+        "bg-[#1c1e2f] text-white rounded-xl p-4 shadow-md w-full max-w-xs relative cursor-pointer",
         account.vipLevel === 20 && "border-glow"
       )}
     >
@@ -75,9 +77,6 @@ const AccountCard: FC<Props> = ({ account }) => {
             account.vipLevel === 20 && "ring-2 ring-yellow-400"
           )}
         />
-        <button className="absolute top-2 right-2 bg-black/40 p-1 rounded-full text-white hover:text-red-500">
-          <Heart size={18} />
-        </button>
       </div>
 
       <div className="mt-4 space-y-2">
@@ -137,7 +136,7 @@ const AccountCard: FC<Props> = ({ account }) => {
           <span className="italic">{getStatusLabel(account.saleStatus)}</span>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

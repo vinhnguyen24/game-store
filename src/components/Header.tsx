@@ -7,11 +7,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
 
 import AuthModal from "@/components/AuthModal";
+import { Button } from "./ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Header() {
   const [isSticky, setIsSticky] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-
+  const { user } = useAuth();
   useEffect(() => {
     setIsMounted(true);
     const handleScroll = () => {
@@ -79,6 +81,11 @@ export default function Header() {
               <motion.div whileHover={{ y: -2 }}>
                 <Link href="/contact">Liên hệ</Link>
               </motion.div>
+              {user ? (
+                <motion.div whileHover={{ y: -2 }}>
+                  <Button>Đăng bán tài khoản</Button>
+                </motion.div>
+              ) : null}
             </motion.div>
 
             <motion.div

@@ -38,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${cinzel.variable} ${bebas.variable} ${rajdhani.variable} ${anton.variable}`}
+        className={`bg-gray-900 text-gray-200 min-h-screen ${cinzel.variable} ${bebas.variable} ${rajdhani.variable} ${anton.variable}`}
       >
         <Header />
         {children}
