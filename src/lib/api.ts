@@ -35,15 +35,34 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
   const res = await fetch(BASE_URL + endpoint, fetchOptions);
 
   let json;
+  let parseErrorOccurred = false;
+
   try {
     json = await res.json();
-  } catch {
-    throw new Error("Không thể phân tích response JSON");
+  } catch (e) {
+    parseErrorOccurred = true;
+    // If res.json() fails, the json variable might be undefined or partially set.
+    // We don't throw here; subsequent checks will handle errors based on res.ok and parseErrorOccurred.
   }
 
   if (!res.ok) {
-    const message = json?.message || res.statusText || "Lỗi khi gọi API";
+    // If 'json' was successfully parsed (e.g., a JSON error response from the server)
+    // and has a 'message' property, use it.
+    // If JSON parsing failed (parseErrorOccurred = true), 'json' would likely be undefined here,
+    // so json?.message would be undefined, and it falls back to res.statusText.
+    const message =
+      (json && typeof json === "object" && json.message) ||
+      res.statusText ||
+      "Lỗi khi gọi API";
     throw new Error(message);
+  }
+
+  // If we are here, res.ok is true.
+  // Now, if JSON parsing failed for this successful response, it's an issue.
+  if (parseErrorOccurred) {
+    throw new Error(
+      `Không thể phân tích response JSON từ một response thành công (status: ${res.status})`
+    );
   }
 
   return json as TResponse;

@@ -1,4 +1,8 @@
-import { FC } from "react";
+import { FC, useState } from "react"; // Added useState
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { FiExternalLink, FiEye } from "react-icons/fi"; // Added FiEye
+import AccountQuickViewModal from "./AccountQuickViewModal"; // Added
 import { Account } from "../types/account";
 import { Flashlight } from "lucide-react";
 import { RiSpeedFill, RiTicket2Line } from "react-icons/ri";
@@ -11,7 +15,8 @@ interface Props {
 }
 
 const AccountCard: FC<Props> = ({ account }) => {
-  const img = account.images?.[0]?.url || "/placeholder.jpg";
+  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  // const img = account.images?.[0]?.url || "/placeholder.jpg"; // Removed unused img variable
 
   const versionColorMap = {
     gamota: "bg-orange-600",
@@ -49,13 +54,15 @@ const AccountCard: FC<Props> = ({ account }) => {
     global: "Quốc Tế 🌐",
   };
 
-  function convertToShortText(num: number): string {
-    const str = num.toString();
-    if (str.includes(".")) {
-      const [integerPart, decimalPart] = str.split(".");
-      return `${integerPart}tr${decimalPart.charAt(0)}`;
+  function convertToShortText(priceString: string): string {
+    // Expects a string like "11.50"
+    if (priceString.includes(".")) {
+      const [integerPart, decimalPart] = priceString.split(".");
+      // Ensure decimalPart has at least one digit before trying to access charAt(0)
+      const decimalChar = decimalPart.length > 0 ? decimalPart.charAt(0) : "0";
+      return `${integerPart}tr${decimalChar}`;
     } else {
-      return `${str}tr`;
+      return `${priceString}tr`; // Should ideally not happen if toFixed(2) is used
     }
   }
 
@@ -135,7 +142,36 @@ const AccountCard: FC<Props> = ({ account }) => {
           </span>
           <span className="italic">{getStatusLabel(account.saleStatus)}</span>
         </div>
+
+        <div className="mt-3 pt-3 border-t border-gray-700 flex justify-between items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-gray-400 hover:text-yellow-400 hover:bg-gray-700"
+            onClick={() => setIsQuickViewOpen(true)}
+          >
+            <FiEye className="mr-1.5 h-3 w-3" /> Quick View
+          </Button>
+          <Link href={`/account/${account.id}`} passHref legacyBehavior>
+            <a target="_blank" rel="noopener noreferrer">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs bg-transparent hover:bg-gray-700"
+              >
+                Full Details <FiExternalLink className="ml-1.5 h-3 w-3" />
+              </Button>
+            </a>
+          </Link>
+        </div>
       </div>
+      {isQuickViewOpen && (
+        <AccountQuickViewModal
+          account={account}
+          isOpen={isQuickViewOpen}
+          onOpenChange={setIsQuickViewOpen}
+        />
+      )}
     </motion.div>
   );
 };

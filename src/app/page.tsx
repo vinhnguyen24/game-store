@@ -1,104 +1,84 @@
 // app/page.tsx
 "use client";
 
-import { useState, useEffect, JSX } from "react";
-import { apiFetch } from "@/lib/api";
-import { Account, Version, SaleStatus } from "@/types/account";
+import { useState, useEffect } from "react"; // Removed JSX
+// import { apiFetch } from "@/lib/api"; // Removed apiFetch
+import { Account } from "@/types/account"; // Removed Media, Version, SaleStatus
+import { Button } from "@/components/ui/button";
+import { SellAccountForm } from "@/components/SellAccountForm";
 import {
   FiSearch,
-  FiStar,
-  FiShoppingCart,
-  FiClock,
-  FiCheckCircle,
-  FiXCircle,
-  FiImage,
+  // FiStar, // Removed FiStar
+  // FiShoppingCart, // Removed FiShoppingCart
+  // FiClock, // Removed FiClock
+  // FiCheckCircle, // Removed FiCheckCircle
+  // FiXCircle, // Removed FiXCircle
+  // FiImage, // Removed FiImage
 } from "react-icons/fi";
-import Link from "next/link";
-import Image from "next/image";
+// import Link from "next/link"; // Removed Link
+// import Image from "next/image"; // Removed Image
 import AccountCard from "@/components/AccountCard";
 import accountData from "@/fakeData";
 
-const versionLabels: Record<Version, string> = {
-  gamota: "Gamota",
-  japan: "Nhật Bản",
-  global: "Global",
-};
+// const versionLabels: Record<Version, string> = { // Removed versionLabels
+//   gamota: "Gamota",
+//   japan: "Nhật Bản",
+//   global: "Global",
+// };
 
-const isSupportedImage = (mimeType: string) => {
-  const supportedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-  return supportedTypes.includes(mimeType);
-};
+// const isSupportedImage = (mimeType: string) => { // Removing unused isSupportedImage function
+//   const supportedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+//   return supportedTypes.includes(mimeType);
+// };
 
-const AccountImage = ({ image }: { image: Media }) => {
-  if (!isSupportedImage(image.mime)) {
-    return (
-      <div className="h-48 bg-gray-200 flex flex-col items-center justify-center text-gray-500">
-        <FiImage className="text-3xl mb-2" />
-        <span>Định dạng ảnh không hỗ trợ</span>
-        <span className="text-xs">{image.name}</span>
-      </div>
-    );
-  }
+// const AccountImage = ({ image }: { image: Media }) => { // Removing unused AccountImage component
+//   // Restoring AccountImage component
+//   if (!isSupportedImage(image.mime)) {
+//     return (
+//       <div className="h-48 bg-gray-200 flex flex-col items-center justify-center text-gray-500">
+//         <FiImage className="text-3xl mb-2" />
+//         <span>Định dạng ảnh không hỗ trợ</span>
+//         <span className="text-xs">{image.name}</span>
+//       </div>
+//     );
+//   }
+//
+//   return (
+//     <div className="h-48 relative">
+//       <Image
+//         src={image.url}
+//         alt={image.alternativeText || image.caption || "Ảnh tài khoản game"}
+//         fill
+//         className="object-cover"
+//         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+//         onError={(e) => {
+//           // Fallback nếu ảnh load lỗi
+//           const target = e.target as HTMLImageElement;
+//           target.onerror = null;
+//           target.src = "/images/default-account.jpg"; // Using existing placeholder
+//         }}
+//       />
+//     </div>
+//   );
+// };
 
-  return (
-    <div className="h-48 relative">
-      <Image
-        src={image.url}
-        alt={image.alternativeText || image.caption || "Ảnh tài khoản game"}
-        fill
-        className="object-cover"
-        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        onError={(e) => {
-          // Fallback nếu ảnh load lỗi
-          const target = e.target as HTMLImageElement;
-          target.onerror = null;
-          target.src = "/placeholder-account.jpg";
-        }}
-      />
-    </div>
-  );
-};
+// Removed duplicated isSupportedImage and the first HomePage declaration
+// const isSupportedImage = (mimeType: string) => { ... };
+// const HomePage = () => { ... };
+// Also removing the stray JSX/HTML that was outside a component from line 75 to 100
 
-const StatusIcon = ({ status }: { status: SaleStatus }) => {
-  switch (status) {
-    case "pending":
-      return <FiClock className="text-yellow-500" />;
-    case "sale":
-      return <FiCheckCircle className="text-green-500" />;
-    case "cancel":
-      return <FiXCircle className="text-red-500" />;
-    default:
-      return null;
-  }
-};
-
-const statusLabels: Record<SaleStatus, string> = {
-  pending: "Đang chờ",
-  sale: "Đang bán",
-  cancel: "Đã hủy",
-};
-
-interface Pagination {
-  page: number;
-  pageSize: number;
-  pageCount: number;
-  total: number;
-}
-
-interface Meta {
-  pagination: Pagination;
-}
-
-interface AccountsResponse {
-  meta: Meta;
-  data?: unknown[]; // optional nếu bạn không dùng
-}
+// const StatusIcon = ({ status }: { status: SaleStatus }) => { ... }; // Already commented
+// const statusLabels: Record<SaleStatus, string> = { ... }; // Already commented
+// interface Pagination { ... }; // Already commented
+// interface Meta { ... }; // Already commented
+// interface AccountsResponse { ... }; // Already commented
 
 const HomePage = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error] = useState(""); // Removed setError, as it's unused
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
 
   useEffect(() => {
     // const fetchAccounts = async () => {
@@ -152,11 +132,22 @@ const HomePage = () => {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <header className="mb-8 text-center">
-        <h1 className="text-3xl font-bold mb-2">SHOP TÀI KHOẢN GAME</h1>
+        <div className="flex justify-between items-center mb-4">
+          <div></div> {/* Placeholder for alignment */}
+          <h1 className="text-3xl font-bold">SHOP TÀI KHOẢN GAME</h1>
+          <Button onClick={() => setIsSellModalOpen(true)}>
+            Đăng Bán Tài Khoản
+          </Button>
+        </div>
         <p className="text-gray-600">
           Uy tín - Chất lượng - Giá tốt nhất thị trường
         </p>
       </header>
+
+      <SellAccountForm
+        isOpen={isSellModalOpen}
+        onOpenChange={setIsSellModalOpen}
+      />
 
       {/* Search */}
       <div className="mb-8 max-w-2xl mx-auto">
