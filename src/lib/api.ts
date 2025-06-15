@@ -51,7 +51,7 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
     // If JSON parsing failed (parseErrorOccurred = true), 'json' would likely be undefined here,
     // so json?.message would be undefined, and it falls back to res.statusText.
     const message =
-      (json && typeof json === "object" && json.message) ||
+      (json && typeof json === "object" && json?.error?.message) ||
       res.statusText ||
       "Lỗi khi gọi API";
     throw new Error(message);

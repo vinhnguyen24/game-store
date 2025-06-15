@@ -97,7 +97,12 @@ const AccountCard: FC<Props> = ({ account }) => {
           </span>
           {account.vipLevel === 20 ? (
             <span className="relative font-cinzel inline-flex items-center px-2 py-1 bg-black text-yellow-400 rounded-full animate-glow">
-              SVIP⭐
+              SVIP
+              <img
+                src={"/images/SVIP.webp"}
+                alt={"SVIP"}
+                style={{ width: "20px", height: "auto" }}
+              />
             </span>
           ) : (
             account.vipLevel >= 17 && (

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import clsx from "clsx";
-
+import { FiUser } from "react-icons/fi";
 import AuthModal from "@/components/AuthModal";
 import { Button } from "./ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -50,8 +50,8 @@ export default function Header() {
               <Image
                 src="/images/logo.png"
                 alt="Game Store"
-                width={90}
-                height={30}
+                width={50}
+                height={50}
                 className="transition-all duration-300"
               />
             </motion.div>
@@ -93,7 +93,9 @@ export default function Header() {
               whileTap={{ scale: 0.9 }}
               className="ml-4"
             >
-              <AuthModal />
+              <AuthModal>
+                <FiUser className="w-5 h-5" />
+              </AuthModal>
             </motion.div>
           </motion.nav>
         </div>

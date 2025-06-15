@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +12,8 @@ import {
   // FiBarChart2, // Removed
   FiEdit3,
 } from "react-icons/fi";
-
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL_DOMAIN || "http://localhost:1340";
 // --- Mock Tabs Implementation (Placeholder) ---
 // Replace this with actual shadcn/ui Tabs import once added to the project
 
@@ -134,10 +135,10 @@ const TabsContent = ({
 
 // Mock user data - replace with actual data fetching later
 const mockUser = {
-  name: "John Doe",
+  username: "John Doe",
   email: "john.doe@example.com",
-  avatarUrl: "/images/default-account.jpg", // Using existing default image
-  joinedDate: "2023-01-15",
+  avatar: "/images/default-account.jpg", // Using existing default image
+  createdAt: "2023-01-15",
   bio: "Loves gaming and finding the best deals!",
   isSeller: true, // Example flag
   stats: {
@@ -183,10 +184,23 @@ const mockPurchases = [
 ];
 
 const ProfilePage = () => {
-  const [user] = useState(mockUser); // Removed setUser
+  const [user, setUser] = useState(mockUser); // Removed setUser
   const [activeTab, setActiveTab] = useState(
-    user.isSeller ? "myListings" : "purchaseHistory"
+    user?.isSeller ? "myListings" : "purchaseHistory"
   );
+
+  useEffect(() => {
+    const userStorage = localStorage.getItem("user")
+      ? JSON.parse(localStorage.getItem("user") as string)
+      : null;
+    const imageUrl =
+      userStorage?.avatar?.formats?.thumbnail?.url || userStorage?.avatar?.url;
+    const fullUrl = imageUrl.startsWith("http")
+      ? imageUrl
+      : `${BASE_URL}${imageUrl}`;
+    userStorage.avatar = fullUrl;
+    setUser(userStorage);
+  }, []);
 
   // Placeholder functions for actions
   const handleEditProfile = () => alert("Edit profile clicked!");
@@ -199,8 +213,8 @@ const ProfilePage = () => {
         <div className="flex flex-col md:flex-row items-center">
           <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-blue-500 mb-4 md:mb-0 md:mr-6">
             <Image
-              src={user.avatarUrl}
-              alt={user.name}
+              src={user.avatar ?? "/images/default-account.jpg"}
+              alt={user.username}
               fill
               className="object-cover"
               sizes="160px"
@@ -208,11 +222,11 @@ const ProfilePage = () => {
           </div>
           <div className="text-center md:text-left">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
-              {user.name}
+              {user.username}
             </h1>
             <p className="text-md text-gray-600">{user.email}</p>
             <p className="text-sm text-gray-500 mt-1">
-              Joined: {new Date(user.joinedDate).toLocaleDateString()}
+              Joined: {new Date(user.createdAt).toLocaleDateString()}
             </p>
             <p className="text-sm text-gray-700 mt-2 max-w-md">{user.bio}</p>
             <Button
@@ -236,7 +250,7 @@ const ProfilePage = () => {
           <FiList className="text-3xl text-blue-500" />
           <div>
             <p className="text-2xl font-semibold">
-              {user.stats.listingsActive}
+              {user.stats?.listingsActive}
             </p>
             <p className="text-gray-500">Active Listings</p>
           </div>
@@ -247,7 +261,7 @@ const ProfilePage = () => {
         >
           <FiTag className="text-3xl text-green-500" />
           <div>
-            <p className="text-2xl font-semibold">{user.stats.totalSold}</p>
+            <p className="text-2xl font-semibold">{user.stats?.totalSold}</p>
             <p className="text-gray-500">Items Sold</p>
           </div>
         </div>
@@ -258,7 +272,7 @@ const ProfilePage = () => {
           <FiShoppingCart className="text-3xl text-purple-500" />
           <div>
             <p className="text-2xl font-semibold">
-              {user.stats.totalPurchased}
+              {user.stats?.totalPurchased}
             </p>
             <p className="text-gray-500">Items Purchased</p>
           </div>

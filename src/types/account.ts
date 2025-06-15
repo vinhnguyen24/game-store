@@ -11,6 +11,7 @@ export interface Account {
   speed: number;
   goldenHeads: number;
   equipment: number;
+  talent: number;
   emblem: string;
   tattoo: string;
   tickets: number;
