@@ -8,9 +8,12 @@ export default async function page() {
     data = await apiFetch("/accounts?populate=*", {
       method: "GET",
     });
-    cityThemeData = await apiFetch("/city-themes?populate=*", {
-      method: "GET",
-    });
+    cityThemeData = await apiFetch(
+      "/city-themes?populate=*&pagination[pageSize]=100",
+      {
+        method: "GET",
+      }
+    );
   } catch (err) {
     console.error(err);
   } finally {
