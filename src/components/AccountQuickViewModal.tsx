@@ -197,16 +197,10 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
           >
             <FiShoppingCart className="mr-2" /> Purchase Now
           </Button>
-          <Link href={`/account/${account.id}`} passHref legacyBehavior>
-            <a
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto"
-            >
-              <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
-                View Full Page <FiExternalLink className="ml-2" />
-              </Button>
-            </a>
+          <Link href={`/account/${account.id}`} passHref>
+            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+              View Full Page <FiExternalLink className="ml-2" />
+            </Button>
           </Link>
         </DialogFooter>
       </DialogContent>

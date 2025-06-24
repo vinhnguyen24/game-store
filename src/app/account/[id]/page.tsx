@@ -83,7 +83,6 @@ const AccountDetailPage = () => {
           </Button>
         </Link>
       </div>
-
       <div className="bg-white shadow-xl rounded-lg overflow-hidden">
         {/* Image Gallery - Basic for now */}
         {account.images && account.images.length > 0 && (

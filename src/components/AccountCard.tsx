@@ -157,16 +157,14 @@ const AccountCard: FC<Props> = ({ account }) => {
           >
             <FiEye className="mr-1.5 h-3 w-3" /> Quick View
           </Button>
-          <Link href={`/account/${account.id}`} passHref legacyBehavior>
-            <a target="_blank" rel="noopener noreferrer">
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-xs bg-transparent hover:bg-gray-700"
-              >
-                Full Details <FiExternalLink className="ml-1.5 h-3 w-3" />
-              </Button>
-            </a>
+          <Link href={`/account/${account.id}`} passHref>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs bg-transparent hover:bg-gray-700"
+            >
+              Full Details <FiExternalLink className="ml-1.5 h-3 w-3" />
+            </Button>
           </Link>
         </div>
       </div>
