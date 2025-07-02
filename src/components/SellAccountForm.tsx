@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,13 @@ import * as Checkbox from "@radix-ui/react-checkbox";
 import { Check, X } from "lucide-react";
 import { Account } from "@/types/account";
 import { ImageManagerModal } from "./ImageManagerModal";
+import { apiFetch } from "@/lib/api";
+import { getSuggestedPrice } from "./priceSuggestor";
+
+interface UploadResponse {
+  id: number;
+  [key: string]: unknown; // For other properties that might exist
+}
 
 type SellAccountFormData = Omit<
   Account,
@@ -69,8 +76,9 @@ export function SellAccountForm({
     resources: "",
     actionPoints: 0,
     commander: "",
-    legendaryHouse: "",
+    equipment_emblems: "",
     keyRally: false,
+    legendaryHouse: "",
   };
   const [formData, setFormData] =
     useState<SellAccountFormData>(initialFormData);
@@ -78,9 +86,43 @@ export function SellAccountForm({
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const [legendaryModalOpen, setLegendaryModalOpen] = useState(false);
-  const [selectedLegendary, setSelectedLegendary] = useState<string[]>([]);
+  const [selectedLegendary, setSelectedLegendary] = useState<number[]>([]);
   const [filterType, setFilterType] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+
+  const [suggestedPrice, setSuggestedPrice] = useState(0);
+  const [displayedPrice, setDisplayedPrice] = useState(0);
+  const [manualPrice, setManualPrice] = useState<number | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [isManual, setIsManual] = useState(false);
+
+  useEffect(() => {
+    const price = getSuggestedPrice(formData);
+    setSuggestedPrice(price);
+  }, [formData]);
+
+  useEffect(() => {
+    if (manualPrice !== null) return; // nếu đang chỉnh tay thì không animate
+    let current = displayedPrice;
+    const target = suggestedPrice;
+    const step = Math.max(Math.floor((target - current) / 10), 1000);
+
+    if (current < target) {
+      const timer = setInterval(() => {
+        current += step;
+        if (current >= target) {
+          current = target;
+          clearInterval(timer);
+        }
+        setDisplayedPrice(current);
+      }, 30);
+      return () => clearInterval(timer);
+    } else {
+      setDisplayedPrice(target);
+    }
+  }, [suggestedPrice]);
+
+  const priceToShow = manualPrice !== null ? manualPrice : displayedPrice;
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -98,29 +140,91 @@ export function SellAccountForm({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setImageFiles((prev) => [...prev, ...newFiles]);
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    // Get user from localStorage
+    const userData = localStorage.getItem("user");
+    if (!userData) {
+      alert("User not found!");
+      return;
+    }
+
+    try {
+      const user = JSON.parse(userData) as { id: number };
+
+      // 1. Upload images if any
+      const uploadedImageIds = await uploadImages();
+
+      // 2. Prepare city_themes connections
+      const connectThemes = selectedLegendary.map((id) => ({ id }));
+
+      const params = {
+        data: {
+          ...formData,
+          city_themes: {
+            connect: connectThemes,
+          },
+          user: {
+            connect: [{ id: user.id }],
+            disconnect: [],
+          },
+          saleStatus: "pending",
+          price: priceToShow,
+          ...(uploadedImageIds.length > 0 && { images: uploadedImageIds }),
+        },
+      };
+
+      // Remove unwanted field
+      delete (params.data as any).legendaryHouse;
+      // 4. Create account
+      const res = await apiFetch<{ data: SellAccountFormData }>("/accounts", {
+        method: "POST",
+        data: params,
+      });
+
+      console.log("Account created successfully:", res);
+
+      // 5. Reset form (uncomment when ready)
+      // resetForm();
+
+      alert("Account submitted for sale successfully!");
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      alert(
+        `Submission failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setFormData((prev) => ({
-      ...prev,
-      legendaryHouse: selectedLegendary.join(", "),
-    }));
-    console.log("Form Data:", formData);
-    console.log("Legendary Houses:", selectedLegendary);
-    console.log("Image Files:", imageFiles);
-    setFormData(initialFormData);
-    setSelectedLegendary([]);
-    setImageFiles([]);
-    onOpenChange(false);
-    alert("Account submitted for sale (check console for data)!");
-  };
+  // Helper function for image upload
+  const uploadImages = async (): Promise<number[]> => {
+    if (imageFiles.length === 0) return [];
 
+    try {
+      const imageForm = new FormData();
+      imageFiles.forEach((file) => {
+        imageForm.append("files", file);
+      });
+
+      // Debug FormData contents (optional)
+      for (const entry of imageForm.entries()) {
+        console.log("FormData entry:", entry[0], entry[1]);
+      }
+
+      const uploadRes = await apiFetch<UploadResponse[]>("/upload", {
+        method: "POST",
+        data: imageForm,
+      });
+
+      return uploadRes.map((file) => file.id);
+    } catch (error) {
+      console.error("Image upload failed:", error);
+      throw new Error("Failed to upload images");
+    }
+  };
   const filteredHouses = useMemo(() => {
     let data = citiThemes;
     if (filterType) data = data.filter((h) => h.type === filterType);
@@ -131,10 +235,19 @@ export function SellAccountForm({
     return data;
   }, [citiThemes, filterType, search]);
 
-  const toggleLegendary = (id: string) => {
+  const toggleLegendary = (id: number) => {
     setSelectedLegendary((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
+  };
+
+  const handleRenderHouse = () => {
+    return selectedLegendary.map((item) => {
+      const index = citiThemes.findIndex(
+        (itemThemes) => itemThemes.id === item
+      );
+      if (index !== -1) return citiThemes[index].name;
+    });
   };
 
   return (
@@ -159,18 +272,64 @@ export function SellAccountForm({
           </div>
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-4">
-              <Label htmlFor="price">Giá (VNĐ)</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                value={formData.price === 0 ? "" : formData.price}
-                onChange={handleChange}
-                required
-                min="0"
-                step="100000"
-                placeholder="Giá tiền mong muốn"
-              />
+              <Label htmlFor="price">{`Giá ${
+                editing ? "mong muốn" : "gợi ý"
+              }  (VNĐ)`}</Label>
+
+              <div className="flex items-center gap-2">
+                {editing ? (
+                  <Input
+                    type="number"
+                    value={manualPrice ?? priceToShow}
+                    onChange={(e) => setManualPrice(Number(e.target.value))}
+                    className="w-full"
+                  />
+                ) : (
+                  <div className="text-green-600 ">
+                    {priceToShow.toLocaleString()} đ
+                  </div>
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (editing) {
+                      if (manualPrice === suggestedPrice) setManualPrice(null);
+                      else setIsManual(true);
+                    }
+                    setEditing(!editing);
+                  }}
+                >
+                  {editing ? "Lưu" : "Sửa"}
+                </Button>
+                {isManual ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setManualPrice(null);
+                      setIsManual(false);
+                    }}
+                  >
+                    Reset
+                  </Button>
+                ) : null}
+              </div>
+
+              {/* Warning nếu giá nhập tay thấp hơn gợi ý */}
+              {manualPrice !== null && manualPrice < suggestedPrice && (
+                <p className="text-sm text-yellow-600 mt-1">
+                  Giá bạn nhập thấp hơn gợi ý khoảng{" "}
+                  {(suggestedPrice - manualPrice).toLocaleString()}đ
+                </p>
+              )}
+              {manualPrice !== null && manualPrice > suggestedPrice && (
+                <p className="text-sm text-yellow-600 mt-1">
+                  Giá bạn nhập cao hơn gợi ý khoảng{" "}
+                  {(manualPrice - suggestedPrice).toLocaleString()}đ
+                </p>
+              )}
             </div>
             <div className="col-span-6 md:col-span-2">
               <Label htmlFor="version">Phiên bản</Label>
@@ -237,7 +396,7 @@ export function SellAccountForm({
                 min="0"
               />
             </div>
-            <div className="col-span-6 md:col-span-4">
+            <div className="col-span-6 md:col-span-2">
               <Label htmlFor="tickets">Vé bay (bao gồm tín dụng)</Label>
               <Input
                 id="tickets"
@@ -271,6 +430,17 @@ export function SellAccountForm({
                 min="0"
                 value={formData.talent === 0 ? "" : formData.talent}
                 placeholder="Số talent"
+              />
+            </div>
+            <div className="col-span-6 md:col-span-2">
+              <Label htmlFor="equipment_emblems">
+                Biểu trưng (vd: 8/8 món V)
+              </Label>
+              <Input
+                id="equipment_emblems"
+                name="equipment_emblems"
+                value={formData.equipment_emblems}
+                onChange={handleChange}
               />
             </div>
           </div>
@@ -313,18 +483,13 @@ export function SellAccountForm({
           <div className="grid grid-cols-12 gap-4">
             <div className="col-span-12 md:col-span-6">
               <Label htmlFor="resources">Tài nguyên (B)</Label>
-              <Input
-                id="resources"
-                name="resources"
-                type="number"
-                onChange={handleChange}
-              />
+              <Input id="resources" name="resources" onChange={handleChange} />
             </div>
             <div className="col-span-12 md:col-span-6">
               <Label>Nhà huyền thoại đã chọn</Label>
               <div className="flex flex-wrap gap-1 text-sm">
                 {selectedLegendary.length > 0 ? (
-                  selectedLegendary.map((item) => (
+                  handleRenderHouse().map((item) => (
                     <span
                       key={item}
                       className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full"
@@ -449,7 +614,7 @@ export function SellAccountForm({
                 <label
                   key={house.id}
                   className={`relative rounded-lg border  ${
-                    selectedLegendary.includes(house.name)
+                    selectedLegendary.includes(house.id)
                       ? "border-blue-600 ring-2 ring-blue-300"
                       : "border-gray-300"
                   } p-2 flex flex-col items-center cursor-pointer`}
@@ -479,8 +644,8 @@ export function SellAccountForm({
                   </div>
 
                   <Checkbox.Root
-                    checked={selectedLegendary.includes(house.name)}
-                    onCheckedChange={() => toggleLegendary(house.name)}
+                    checked={selectedLegendary.includes(house.id)}
+                    onCheckedChange={() => toggleLegendary(house.id)}
                     className="absolute top-2 right-2 w-5 h-5 rounded border border-gray-400 bg-white data-[state=checked]:bg-blue-600"
                   >
                     <Checkbox.Indicator className="text-white">

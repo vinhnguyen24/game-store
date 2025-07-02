@@ -14,6 +14,7 @@ export interface Account {
   talent: number;
   emblem: string;
   tattoo: string;
+  equipment_emblems: string;
   tickets: number;
   resources: string;
   actionPoints: number;

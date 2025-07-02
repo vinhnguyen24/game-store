@@ -18,18 +18,20 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
   const jwtToken =
     token ||
     (typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null);
-
+  const isFormData =
+    typeof FormData !== "undefined" && data instanceof FormData;
+  console.log(isFormData, endpoint);
   const fetchOptions: RequestInit = {
     method,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...headers,
       ...(jwtToken ? { Authorization: `Bearer ${jwtToken}` } : {}),
     },
   };
 
   if (data) {
-    fetchOptions.body = JSON.stringify(data);
+    fetchOptions.body = isFormData ? data : JSON.stringify(data);
   }
 
   const res = await fetch(BASE_URL + endpoint, fetchOptions);
@@ -41,8 +43,6 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
     json = await res.json();
   } catch (e) {
     parseErrorOccurred = true;
-    // If res.json() fails, the json variable might be undefined or partially set.
-    // We don't throw here; subsequent checks will handle errors based on res.ok and parseErrorOccurred.
   }
 
   if (!res.ok) {
