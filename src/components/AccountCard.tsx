@@ -9,6 +9,7 @@ import { RiSpeedFill, RiTicket2Line } from "react-icons/ri";
 import { LuCastle } from "react-icons/lu";
 import clsx from "clsx";
 import { motion } from "framer-motion";
+import { convertToShortText } from "@/helper/common";
 
 interface Props {
   account: Account;
@@ -53,18 +54,6 @@ const AccountCard: FC<Props> = ({ account }) => {
     japan: "Nhật Bản",
     global: "Quốc Tế 🌐",
   };
-
-  function convertToShortText(priceString: string): string {
-    // Expects a string like "11.50"
-    if (priceString.includes(".")) {
-      const [integerPart, decimalPart] = priceString.split(".");
-      // Ensure decimalPart has at least one digit before trying to access charAt(0)
-      const decimalChar = decimalPart.length > 0 ? decimalPart.charAt(0) : "0";
-      return `${integerPart}tr${decimalChar}`;
-    } else {
-      return `${priceString}tr`; // Should ideally not happen if toFixed(2) is used
-    }
-  }
 
   return (
     <motion.div
@@ -130,14 +119,16 @@ const AccountCard: FC<Props> = ({ account }) => {
             <RiTicket2Line />
             {account.tickets} Vé
           </span>
-          <span className=" px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
-            <LuCastle />
-            {account.legendaryHouse}
-          </span>
+          {account.city_themes?.length ? (
+            <span className=" px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
+              <LuCastle />
+              {account.city_themes?.length} nhà HT
+            </span>
+          ) : null}
         </div>
 
         <div className="text-lg font-bold text-yellow-400">
-          {convertToShortText(account.price.toFixed(2))} (VNĐ)
+          {convertToShortText(Number(account.price).toFixed(2))} (VNĐ)
         </div>
 
         <div className="text-xs text-gray-400 flex justify-between items-center">
@@ -155,7 +146,7 @@ const AccountCard: FC<Props> = ({ account }) => {
             className="text-xs text-gray-400 hover:text-yellow-400 hover:bg-gray-700"
             onClick={() => setIsQuickViewOpen(true)}
           >
-            <FiEye className="mr-1.5 h-3 w-3" /> Quick View
+            <FiEye className="mr-1.5 h-3 w-3" /> Xem nhanh
           </Button>
           <Link href={`/account/${account.id}`} passHref>
             <Button
@@ -163,7 +154,7 @@ const AccountCard: FC<Props> = ({ account }) => {
               size="sm"
               className="text-xs bg-transparent hover:bg-gray-700"
             >
-              Full Details <FiExternalLink className="ml-1.5 h-3 w-3" />
+              Xem đầy đủ <FiExternalLink className="ml-1.5 h-3 w-3" />
             </Button>
           </Link>
         </div>

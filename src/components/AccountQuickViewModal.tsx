@@ -28,7 +28,12 @@ import {
   FiExternalLink,
 } from "react-icons/fi";
 import Link from "next/link";
-
+import { convertToShortText } from "@/helper/common";
+const vesionMap = {
+  gamota: "Gamota ⭐",
+  japan: "Nhật Bản",
+  global: "Quốc Tế 🌐",
+};
 interface AccountQuickViewModalProps {
   account: Account | null;
   isOpen: boolean;
@@ -55,13 +60,13 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
   const renderSaleStatusIcon = () => {
     switch (account.saleStatus) {
       case "sale":
-        return <FiCheckCircle className="text-green-500" title="On Sale" />;
+        return <FiCheckCircle className="text-green-500" title="Đang bán" />;
       case "pending":
-        return <FiClock className="text-yellow-500" title="Pending" />;
+        return <FiClock className="text-yellow-500" title="Đang chờ" />;
       case "cancel":
-        return <FiXCircle className="text-red-500" title="Cancelled" />;
+        return <FiXCircle className="text-red-500" title="Đã hủy" />;
       default:
-        return null;
+        return <FiCheckCircle className="text-green-500" title="Đang bán" />;
     }
   };
 
@@ -73,7 +78,7 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
             {account.title}
           </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Quick overview of account ID: {account.id}
+            Xem nhanh account ID: {account.id}
           </DialogDescription>
         </DialogHeader>
 
@@ -97,17 +102,17 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
             )}
             <div className="flex items-center justify-between mb-2">
               <p className="text-2xl font-bold text-green-400">
-                ${account.price.toFixed(2)}
+                Giá: {convertToShortText(Number(account.price).toFixed(2))}
               </p>
               <div className="flex items-center space-x-1">
-                <span className="text-sm text-gray-400">Status:</span>
+                <span className="text-sm text-gray-400">Trạng thái:</span>
                 {renderSaleStatusIcon()}
               </div>
             </div>
             <p className="text-sm text-gray-400">
-              Version:{" "}
+              Phiên bản:{" "}
               <span className="font-semibold text-blue-400">
-                {account.version}
+                {vesionMap[account.version]}
               </span>
             </p>
           </div>
@@ -115,11 +120,11 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
           {/* Right Column: Details */}
           <div>
             <h3 className="text-lg font-semibold text-yellow-400 mb-3">
-              Key Highlights
+              Điểm nổi bật
             </h3>
             <div className="space-y-2 text-sm text-gray-300">
               <p className="flex items-center">
-                <FiStar className="mr-2 text-blue-400" /> VIP Level:{" "}
+                <FiStar className="mr-2 text-blue-400" /> VIP :{" "}
                 <span className="font-bold ml-1">{account.vipLevel}</span>
               </p>
               <p className="flex items-center">
@@ -129,53 +134,53 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
                 </span>
               </p>
               <p className="flex items-center">
-                <FiZap className="mr-2 text-yellow-400" /> Speedups:{" "}
-                <span className="font-bold ml-1">{account.speed} hrs</span>
+                <FiZap className="mr-2 text-yellow-400" /> Tăng tốc:{" "}
+                <span className="font-bold ml-1">{account.speed} giờ</span>
               </p>
               <p className="flex items-center">
-                <FiCpu className="mr-2 text-purple-400" /> Golden Heads:{" "}
+                <FiCpu className="mr-2 text-purple-400" /> Trọc vàng:{" "}
                 <span className="font-bold ml-1">{account.goldenHeads}</span>
               </p>
               <p className="flex items-center">
-                <FiShield className="mr-2 text-indigo-400" /> Equipment Sets:{" "}
+                <FiShield className="mr-2 text-indigo-400" />
+                Trang bị cam:{" "}
                 <span className="font-bold ml-1">{account.equipment}</span>
               </p>
               <p className="flex items-center">
-                <FiPaperclip className="mr-2 text-pink-400" /> Migration
-                Tickets:{" "}
+                <FiPaperclip className="mr-2 text-pink-400" /> Vé bay:{" "}
                 <span className="font-bold ml-1">{account.tickets}</span>
               </p>
               {account.keyRally && (
                 <p className="flex items-center">
                   <FiKey className="mr-2 text-teal-400" />{" "}
-                  <span className="font-bold">Key Rally Available</span>
+                  <span className="font-bold">Key rally/ def</span>
                 </p>
               )}
             </div>
 
             <h3 className="text-lg font-semibold text-yellow-400 mt-4 mb-2">
-              Other Details
+              Các thông tin khác
             </h3>
             <ul className="space-y-1 text-sm text-gray-300 list-disc list-inside">
               <li>
-                <strong>Emblem:</strong> {account.emblem || "N/A"}
+                <strong>Vũ trang:</strong> {account.emblem || "N/A"}
               </li>
               <li>
-                <strong>Tattoo:</strong> {account.tattoo || "N/A"}
+                <strong>Minh văn:</strong> {account.tattoo || "N/A"}
               </li>
               <li>
-                <strong>Resources:</strong> {account.resources || "N/A"}
+                <strong>Tài nguyên:</strong> {account.resources || "N/A"}
               </li>
               <li>
-                <strong>Action Points:</strong>{" "}
+                <strong>Điểm hành động:</strong>{" "}
                 {account.actionPoints?.toLocaleString() || "N/A"}
               </li>
               <li>
-                <strong>Commanders:</strong> {account.commander || "N/A"}
+                <strong>Tướng:</strong> {account.commander || "N/A"}
               </li>
               <li>
-                <strong>Legendary House:</strong>{" "}
-                {account.legendaryHouse || "N/A"}
+                <strong>Nhà huyền thoại:</strong>{" "}
+                {account.city_themes?.length || "N/A"}
               </li>
             </ul>
           </div>
@@ -187,19 +192,19 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
               variant="outline"
               className="text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
             >
-              Close
+              Đóng
             </Button>
           </DialogClose>
           <Button
             onClick={handlePurchase}
             className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white"
-            disabled={account.saleStatus !== "sale"} // Disable if not on sale
+            // disabled={account.saleStatus !== "sale"} // Disable if not on sale
           >
-            <FiShoppingCart className="mr-2" /> Purchase Now
+            <FiShoppingCart className="mr-2" /> Mua ngay
           </Button>
           <Link href={`/account/${account.id}`} passHref>
             <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
-              View Full Page <FiExternalLink className="ml-2" />
+              Xem đầy đủ <FiExternalLink className="ml-2" />
             </Button>
           </Link>
         </DialogFooter>

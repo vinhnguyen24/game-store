@@ -26,6 +26,11 @@ export interface Account {
   updatedAt: string;
   publishedAt: string;
   keyRally: boolean;
+  city_themes: {
+    id: number;
+    name: string;
+    buff: string;
+  }[];
 }
 
 export interface Media {

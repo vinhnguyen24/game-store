@@ -128,7 +128,7 @@ const AccountDetailPage = () => {
               </div>
             </div>
             <div className="text-3xl font-bold text-green-600 mt-4 md:mt-0">
-              ${account.price.toFixed(2)}
+              ${Number(account.price).toFixed(2)}
             </div>
           </div>
 

@@ -46,7 +46,7 @@ const HomePage = ({ account, cityThemes }: CertificationsProps) => {
 
     // fetchAccounts();
     setLoading(false);
-    setAccounts(accountData);
+    setAccounts(account);
   }, []);
 
   const filteredAccounts = accounts.filter((account) => {

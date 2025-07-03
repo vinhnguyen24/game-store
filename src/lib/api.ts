@@ -20,7 +20,6 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
     (typeof window !== "undefined" ? localStorage.getItem("jwtToken") : null);
   const isFormData =
     typeof FormData !== "undefined" && data instanceof FormData;
-  console.log(isFormData, endpoint);
   const fetchOptions: RequestInit = {
     method,
     headers: {
