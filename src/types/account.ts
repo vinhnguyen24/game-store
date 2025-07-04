@@ -2,6 +2,7 @@ export type SaleStatus = "pending" | "sale" | "cancel";
 export type Version = "gamota" | "japan" | "global";
 
 export interface Account {
+  documentId: string;
   id: number;
   title: string;
   version: Version;
@@ -26,11 +27,15 @@ export interface Account {
   updatedAt: string;
   publishedAt: string;
   keyRally: boolean;
+  sellerName: string;
   city_themes: {
     id: number;
     name: string;
     buff: string;
   }[];
+  thumbnail: {
+    url: string;
+  };
 }
 
 export interface Media {

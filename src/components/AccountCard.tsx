@@ -143,16 +143,16 @@ const AccountCard: FC<Props> = ({ account }) => {
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs text-gray-400 hover:text-yellow-400 hover:bg-gray-700"
+            className="text-xs text-gray-400 hover:text-yellow-400 hover:bg-gray-700 cursor-pointer"
             onClick={() => setIsQuickViewOpen(true)}
           >
             <FiEye className="mr-1.5 h-3 w-3" /> Xem nhanh
           </Button>
-          <Link href={`/account/${account.id}`} passHref>
+          <Link href={`/account/${account.documentId}`} passHref>
             <Button
               variant="outline"
               size="sm"
-              className="text-xs bg-transparent hover:bg-gray-700"
+              className="text-xs bg-transparent hover:bg-gray-700 hover:text-yellow-400 cursor-pointer"
             >
               Xem đầy đủ <FiExternalLink className="ml-1.5 h-3 w-3" />
             </Button>

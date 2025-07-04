@@ -3,7 +3,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import "./globals.css";
 import { Cinzel, Bebas_Neue, Rajdhani, Anton } from "next/font/google";
-
+import "keen-slider/keen-slider.min.css";
 const cinzel = Cinzel({
   subsets: ["latin"],
   weight: "700",

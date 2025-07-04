@@ -29,6 +29,7 @@ import {
 } from "react-icons/fi";
 import Link from "next/link";
 import { convertToShortText } from "@/helper/common";
+import AccountCarousel from "./Account/AccountCarousel";
 const vesionMap = {
   gamota: "Gamota ⭐",
   japan: "Nhật Bản",
@@ -39,14 +40,14 @@ interface AccountQuickViewModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
-
+const BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL_DOMAIN || "http://localhost:1340";
 const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
   account,
   isOpen,
   onOpenChange,
 }) => {
   if (!account) return null;
-
   const handlePurchase = () => {
     // Placeholder for purchase logic
     console.log(
@@ -69,7 +70,10 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
         return <FiCheckCircle className="text-green-500" title="Đang bán" />;
     }
   };
-
+  const commanderLines = (account.commander ?? "")
+    .split("|")
+    .map((s) => s.trim())
+    .filter(Boolean);
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-800 text-white border-gray-700">
@@ -85,14 +89,10 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
         <div className="py-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Column: Image & Basic Info */}
           <div>
-            {account.images && account.images.length > 0 ? (
-              <div className="relative aspect-video rounded-lg overflow-hidden mb-4 shadow-lg">
-                <Image
-                  src={account.images[0].url}
-                  alt={account.images[0].name || "Account Image"}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+            {account.images?.length ? (
+              <div className="bg-white shadow-xl rounded-lg p-6">
+                <AccountCarousel
+                  images={account.images.map((img) => `${BASE_URL}${img.url}`)}
                 />
               </div>
             ) : (
@@ -104,10 +104,6 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
               <p className="text-2xl font-bold text-green-400">
                 Giá: {convertToShortText(Number(account.price).toFixed(2))}
               </p>
-              <div className="flex items-center space-x-1">
-                <span className="text-sm text-gray-400">Trạng thái:</span>
-                {renderSaleStatusIcon()}
-              </div>
             </div>
             <p className="text-sm text-gray-400">
               Phiên bản:{" "}
@@ -115,6 +111,20 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
                 {vesionMap[account.version]}
               </span>
             </p>
+            <div className="flex justify-between">
+              <Button
+                onClick={handlePurchase}
+                className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white "
+                // disabled={account.saleStatus !== "sale"} // Disable if not on sale
+              >
+                <FiShoppingCart className="mr-2" /> Mua ngay
+              </Button>
+              <Link href={`/account/${account.documentId}`} passHref>
+                <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
+                  Xem đầy đủ <FiExternalLink className="ml-2" />
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Right Column: Details */}
@@ -176,38 +186,24 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
                 {account.actionPoints?.toLocaleString() || "N/A"}
               </li>
               <li>
-                <strong>Tướng:</strong> {account.commander || "N/A"}
+                <strong>Chỉ huy:</strong>
+                <div className="space-y-1 mt-1">
+                  {commanderLines.map((line, idx) => (
+                    <div key={idx}>- {line}</div>
+                  ))}
+                </div>
               </li>
               <li>
                 <strong>Nhà huyền thoại:</strong>{" "}
-                {account.city_themes?.length || "N/A"}
+                <div className="space-y-1 mt-1">
+                  {account.city_themes.map((theme, idx) => (
+                    <div key={idx}>- {theme.name}</div>
+                  ))}
+                </div>
               </li>
             </ul>
           </div>
         </div>
-
-        <DialogFooter className="border-t border-gray-700 pt-4 flex flex-col sm:flex-row sm:justify-end space-y-2 sm:space-y-0 sm:space-x-2">
-          <DialogClose asChild>
-            <Button
-              variant="outline"
-              className="text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
-            >
-              Đóng
-            </Button>
-          </DialogClose>
-          <Button
-            onClick={handlePurchase}
-            className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white"
-            // disabled={account.saleStatus !== "sale"} // Disable if not on sale
-          >
-            <FiShoppingCart className="mr-2" /> Mua ngay
-          </Button>
-          <Link href={`/account/${account.id}`} passHref>
-            <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white">
-              Xem đầy đủ <FiExternalLink className="ml-2" />
-            </Button>
-          </Link>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

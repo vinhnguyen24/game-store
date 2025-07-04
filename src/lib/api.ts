@@ -45,6 +45,7 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
   }
 
   if (!res.ok) {
+    console.log(res);
     // If 'json' was successfully parsed (e.g., a JSON error response from the server)
     // and has a 'message' property, use it.
     // If JSON parsing failed (parseErrorOccurred = true), 'json' would likely be undefined here,
