@@ -1,7 +1,7 @@
 // app/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Account } from "@/types/account";
 import { Button } from "@/components/ui/button";
 import { SellAccountForm } from "@/components/SellAccountForm";
@@ -42,10 +42,15 @@ const HomePage = ({ account, cityThemes }: CertificationsProps) => {
   const [legendarySearchTerm, setLegendarySearchTerm] = useState("");
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
+  const accountsSectionRef = useRef<HTMLDivElement>(null);
 
   const handleOpenQuickView = (account: Account) => {
     setSelectedAccount(account);
     setIsQuickViewOpen(true);
+  };
+
+  const handleScrollToAccounts = () => {
+    accountsSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -113,33 +118,36 @@ const HomePage = ({ account, cityThemes }: CertificationsProps) => {
     );
 
   return (
-    <div className="bg-[#121421] min-h-screen">
-      <div className="relative">
-        <div className="background-video-container">
-          <video
-            className="background-video"
-            src="/video/banner.mp4"
-            autoPlay
-            muted
-            loop
-          ></video>
+    <>
+      {/* Hero Section with Video BG */}
+      <div className="relative h-screen w-full overflow-hidden flex items-center justify-center">
+        <video
+          className="absolute top-0 left-0 w-full h-full object-cover z-0"
+          src="/video/banner.mp4"
+          autoPlay
+          muted
+          loop
+        />
+        <div className="absolute top-0 left-0 w-full h-full bg-black/50 z-10" />
+        <div className="relative z-20 text-center text-white p-4">
+          <h1 className="text-6xl md:text-8xl font-extrabold tracking-tight">
+            Caesar Shop
+          </h1>
+          <p className="mt-6 text-xl md:text-2xl text-gray-300">
+            Nơi huyền thoại bắt đầu!
+          </p>
+          <Button
+            onClick={handleScrollToAccounts}
+            className="mt-8 bg-white hover:bg-yellow-600 text-black font-bold py-3 px-8 rounded-full text-lg transition-transform transform hover:scale-105 cursor-pointer"
+          >
+            Lựa chọn tài khoản ngay &rarr;
+          </Button>
         </div>
-        <div className="container mx-auto px-4 py-8">
-          <header className="mb-8 text-center header-content">
-            <div className="flex justify-between items-center mb-4">
-              <div></div>
-              <h1 className="text-3xl font-bold text-white">
-                SHOP TÀI KHOẢN GAME
-              </h1>
-              <Button onClick={() => setIsSellModalOpen(true)}>
-                Đăng Bán Tài Khoản
-              </Button>
-            </div>
-            <p className="text-gray-400">
-              Uy tín - Chất lượng - Giá tốt nhất thị trường
-            </p>
-          </header>
+      </div>
 
+      {/* Account List Section */}
+      <div ref={accountsSectionRef} className="bg-[#121421] py-12">
+        <div className="container mx-auto px-4">
           <SellAccountForm
             isOpen={isSellModalOpen}
             onOpenChange={setIsSellModalOpen}
@@ -147,13 +155,13 @@ const HomePage = ({ account, cityThemes }: CertificationsProps) => {
           />
 
           {/* Search & Filters */}
-          <div className="flex flex-col md:flex-row items-center gap-4 my-6">
-            <div className="relative w-full md:w-auto">
+          <div className="flex flex-col md:flex-row items-center gap-4 my-6 bg-gray-800/50 p-6 rounded-xl">
+            <div className="relative w-full md:flex-grow">
               <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
                 placeholder="Tìm tài khoản, chỉ huy, nhà huyền thoại..."
-                className="w-96 pl-10 pr-4 py-2 rounded-xl border border-gray-700 bg-gray-800 text-white shadow-sm focus:ring-2 focus:ring-yellow-400"
+                className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-700 bg-gray-900 text-white shadow-sm focus:ring-2 focus:ring-yellow-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -172,7 +180,7 @@ const HomePage = ({ account, cityThemes }: CertificationsProps) => {
                 <DialogTrigger asChild>
                   <Button
                     variant="outline"
-                    className="w-48 justify-start text-white cursor-pointer"
+                    className="w-full md:w-48 justify-start text-white cursor-pointer bg-gray-900 border-gray-700 hover:bg-gray-800"
                   >
                     {selectedLegendary.length > 0
                       ? selectedLegendary.join(", ")
@@ -252,7 +260,7 @@ const HomePage = ({ account, cityThemes }: CertificationsProps) => {
           />
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

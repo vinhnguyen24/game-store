@@ -9,25 +9,6 @@ interface Props {
 }
 
 const AccountCard: FC<Props> = ({ account, onQuickView }) => {
-  const statusLabelMap = {
-    sale: "Đang bán",
-    pending: "Chờ duyệt",
-    cancel: "Đã hủy",
-  } as const;
-
-  type SaleStatus = keyof typeof statusLabelMap;
-
-  function isSaleStatus(status: string): status is SaleStatus {
-    return status === "sale" || status === "pending" || status === "cancel";
-  }
-
-  function getStatusLabel(status: string): string {
-    if (isSaleStatus(status)) {
-      return statusLabelMap[status];
-    }
-    return "Không xác định";
-  }
-
   const vesionMap = {
     gamota: "Gamota ⭐",
     japan: "Nhật Bản",
@@ -36,9 +17,6 @@ const AccountCard: FC<Props> = ({ account, onQuickView }) => {
 
   return (
     <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all w-full max-w-sm card-hover-effect relative">
-      <span className="absolute top-2 right-2 bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full shadow">
-        {getStatusLabel(account.saleStatus)}
-      </span>
       <img
         src={"/images/default-account.jpg"}
         alt="Game Account"
