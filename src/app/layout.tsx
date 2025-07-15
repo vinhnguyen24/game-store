@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import "./globals.css";
 import { Cinzel, Bebas_Neue, Rajdhani, Anton } from "next/font/google";
+import { Toaster } from "@/components/ui/sonner";
 import "keen-slider/keen-slider.min.css";
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -42,6 +43,7 @@ export default function RootLayout({
       >
         <Header />
         {children}
+        <Toaster position="top-right" richColors />
       </body>
     </html>
   );

@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { apiFetch } from "@/lib/api";
+import { usePathname } from "next/navigation";
 
 type AuthModalProps = {
   children?: React.ReactNode;
@@ -22,6 +23,7 @@ type AuthModalProps = {
 
 export default function AuthModal({ children }: AuthModalProps) {
   const { user, login } = useAuth();
+  const pathName = usePathname();
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [open, setOpen] = useState(false);
@@ -74,7 +76,11 @@ export default function AuthModal({ children }: AuthModalProps) {
       if (isLogin) {
         login(res.user, res.jwt);
         setOpen(false);
-        router.push("/profile");
+        if (!pathName.startsWith("/account")) {
+          router.push("/profile");
+        } else {
+          window.location.reload();
+        }
       } else {
         setPendingEmail(form.email);
       }

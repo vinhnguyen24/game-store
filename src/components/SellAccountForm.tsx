@@ -20,6 +20,7 @@ import { Account } from "@/types/account";
 import { ImageManagerModal } from "./ImageManagerModal";
 import { apiFetch } from "@/lib/api";
 import { getSuggestedPrice } from "./priceSuggestor";
+import { toast } from "sonner";
 
 interface UploadResponse {
   id: number;
@@ -178,22 +179,19 @@ export function SellAccountForm({
       // Remove unwanted field
       delete (params.data as any).legendaryHouse;
       // 4. Create account
-      const res = await apiFetch<{ data: SellAccountFormData }>("/accounts", {
+      await apiFetch<{ data: SellAccountFormData }>("/accounts", {
         method: "POST",
         data: params,
       });
-
-      console.log("Account created successfully:", res);
-
       // 5. Reset form (uncomment when ready)
       // resetForm();
 
-      alert("Account submitted for sale successfully!");
+      toast.success("Đăng bán account thành công!");
     } catch (error) {
       console.error("Error in handleSubmit:", error);
-      alert(
-        `Submission failed: ${
-          error instanceof Error ? error.message : "Unknown error"
+      toast.error(
+        `Đăng bán thất bại: ${
+          error instanceof Error ? error.message : "Lỗi không xác định"
         }`
       );
     }

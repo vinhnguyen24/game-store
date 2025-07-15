@@ -120,9 +120,18 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-[#121421] text-foreground;
   }
 }
+
+.card-hover-effect {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.card-hover-effect:hover {
+  @apply transform -translate-y-2 shadow-2xl;
+}
+
 @keyframes glow {
   0%,
   100% {
@@ -154,5 +163,66 @@
 .border-glow {
   border: 2px solid gold;
   animation: glow-border 2s infinite ease-in-out;
+  border-radius: 1rem;
+}
+
+.svip-inline-badge {
+  width: 24px;
+  height: 24px;
+  margin-left: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.fire-effect {
+  background: linear-gradient(to right, #ff4500, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: fire 1s infinite alternate;
+  font-weight: bold;
+}
+
+@keyframes fire {
+  from {
+    text-shadow: 0 0 2px #ff4500;
+  }
+  to {
+    text-shadow: 0 0 8px #ffd700;
+  }
+}
+
+.background-video-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: -1;
+}
+
+.background-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.header-content {
+  position: relative;
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 2rem;
   border-radius: 1rem;
 }

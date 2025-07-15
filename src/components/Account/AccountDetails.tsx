@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   FiTag,
   FiShield,
@@ -17,6 +17,11 @@ import { Button } from "@/components/ui/button";
 import AccountCarousel from "./AccountCarousel";
 import InfoBadge from "./InfoBadge";
 import TitleHeader from "./TitleHeader";
+import NegotiatePriceDialog from "./NegotiatePriceDialog";
+import { useAuth } from "@/hooks/useAuth";
+import AuthModal from "../AuthModal";
+import { apiFetch } from "@/lib/api";
+import { toast } from "sonner";
 
 interface AccountProps {
   account: Account;
@@ -26,11 +31,56 @@ const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL_DOMAIN || "http://localhost:1340";
 
 const AccountDetailPage = ({ account }: AccountProps) => {
+  const { user } = useAuth();
+  const [openDialog, setOpenDialog] = useState(false);
   /** Split commanders string thành các dòng */
   const commanderLines = (account.commander ?? "")
     .split("|")
     .map((s) => s.trim())
     .filter(Boolean);
+
+  const handleNegotiate = async (
+    price: number,
+    message: string,
+    phone: string
+  ) => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (!userData) {
+        alert("User not found!");
+        return;
+      }
+      const userInfo = JSON.parse(userData) as { id: number };
+      const params = {
+        data: {
+          buyerZalo: phone,
+          account: {
+            connect: [{ id: account.id }],
+          },
+          offeredPrice: price,
+          statusTransaction: "pending",
+          message: message,
+          buyer: {
+            connect: [{ id: userInfo.id }],
+          },
+        },
+      };
+      await apiFetch("/negotiations", {
+        method: "POST",
+        data: params,
+      });
+      toast.success(
+        "Tạo thương lượng thành công, vui lòng chờ phản hồi từ người bán."
+      );
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      toast.error(
+        `Tạo thương lượng thất bại: ${
+          error instanceof Error ? error.message : "Lỗi không xác định"
+        }`
+      );
+    }
+  };
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-12 bg-gray-50">
@@ -193,13 +243,23 @@ const AccountDetailPage = ({ account }: AccountProps) => {
                 <span className="font-medium text-gray-700">
                   {account.sellerName}
                 </span>
-                <span className="italic text-blue-500 hover:underline cursor-pointer">
-                  Thương lượng
-                </span>
+                {user ? (
+                  <span
+                    className="italic text-blue-500 hover:underline cursor-pointer"
+                    onClick={() => setOpenDialog(true)}
+                  >
+                    Thương lượng
+                  </span>
+                ) : (
+                  <AuthModal>
+                    <span className="italic text-blue-500 hover:underline cursor-pointer">
+                      Thương lượng
+                    </span>
+                  </AuthModal>
+                )}
               </div>
             </div>
 
-            {/* Carousel ảnh */}
             {account.images?.length ? (
               <div className="bg-white shadow-xl rounded-lg p-6">
                 <AccountCarousel
@@ -210,6 +270,11 @@ const AccountDetailPage = ({ account }: AccountProps) => {
           </aside>
         </div>
       </div>
+      <NegotiatePriceDialog
+        isOpen={openDialog}
+        onOpenChange={setOpenDialog}
+        onSubmit={handleNegotiate}
+      />
     </div>
   );
 };

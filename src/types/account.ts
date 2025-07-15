@@ -32,6 +32,7 @@ export interface Account {
     id: number;
     name: string;
     buff: string;
+    type: "infantry" | "archer" | "cavalry" | "mix" | "ultility";
   }[];
   thumbnail: {
     url: string;

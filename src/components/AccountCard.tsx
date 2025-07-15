@@ -1,35 +1,14 @@
-import { FC, useState } from "react"; // Added useState
+import { FC } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { FiExternalLink, FiEye } from "react-icons/fi"; // Added FiEye
-import AccountQuickViewModal from "./AccountQuickViewModal"; // Added
 import { Account } from "../types/account";
-import { Flashlight } from "lucide-react";
-import { RiSpeedFill, RiTicket2Line } from "react-icons/ri";
-import { LuCastle } from "react-icons/lu";
-import clsx from "clsx";
-import { motion } from "framer-motion";
 import { convertToShortText } from "@/helper/common";
 
 interface Props {
   account: Account;
+  onQuickView: (account: Account) => void;
 }
 
-const AccountCard: FC<Props> = ({ account }) => {
-  const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
-  // const img = account.images?.[0]?.url || "/placeholder.jpg"; // Removed unused img variable
-
-  const versionColorMap = {
-    gamota: "bg-orange-600",
-    japan: "bg-red-500",
-    global: "bg-green-600",
-  } as const;
-
-  type VersionKey = keyof typeof versionColorMap;
-
-  const version = account.version as VersionKey;
-  const versionColor = versionColorMap[version] ?? "bg-gray-400";
-
+const AccountCard: FC<Props> = ({ account, onQuickView }) => {
   const statusLabelMap = {
     sale: "Đang bán",
     pending: "Chờ duyệt",
@@ -56,117 +35,81 @@ const AccountCard: FC<Props> = ({ account }) => {
   };
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.05 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className={clsx(
-        "bg-[#1c1e2f] text-white rounded-xl p-4 shadow-md w-full max-w-xs relative cursor-pointer",
-        account.vipLevel === 20 && "border-glow"
-      )}
-    >
-      <div className="relative">
-        <img
-          src={"/images/default-account.jpg"}
-          alt={account.title}
-          className={clsx(
-            "rounded-lg h-40 w-full object-cover",
-            account.vipLevel === 20 && "ring-2 ring-yellow-400"
+    <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all w-full max-w-sm card-hover-effect relative">
+      <span className="absolute top-2 right-2 bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full shadow">
+        {getStatusLabel(account.saleStatus)}
+      </span>
+      <img
+        src={"/images/default-account.jpg"}
+        alt="Game Account"
+        className="rounded-xl w-full aspect-video object-cover"
+      />
+
+      <div className="mt-3 space-y-1">
+        <h2 className="font-semibold text-lg text-gray-800">
+          {account.title}{" "}
+          {account.keyRally && (
+            <span className="text-red-500">🔒 Key rally/def</span>
           )}
-        />
-      </div>
+        </h2>
 
-      <div className="mt-4 space-y-2">
-        <h3 className="text-sm font-semibold leading-snug line-clamp-3">
-          {account.title}
-        </h3>
-
-        <div className="flex flex-wrap gap-2 text-xs mt-1">
-          <span className={clsx("px-2 py-1 rounded-full", versionColor)}>
+        <div className="flex flex-wrap gap-2 text-sm">
+          <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded-full">
             {vesionMap[account.version]}
           </span>
-          {account.vipLevel === 20 ? (
-            <span className="relative font-cinzel inline-flex items-center px-2 py-1 bg-black text-yellow-400 rounded-full animate-glow">
-              SVIP
-              <img
-                src={"/images/SVIP.webp"}
-                alt={"SVIP"}
-                style={{ width: "20px", height: "auto" }}
-              />
-            </span>
-          ) : (
-            account.vipLevel >= 17 && (
-              <span className="relative font-cinzel inline-flex items-center px-2 py-1 bg-red-600 text-xs font-semibold rounded-full animate-fire">
-                VIP {account.vipLevel} 🔥
-              </span>
-            )
-          )}
-
-          {account.keyRally && (
-            <span className="relative inline-flex items-center px-2 py-1 bg-red-600 text-xs font-semibold rounded-full animate-fire inline-flex items-center gap-x-1">
-              Key Rally/ Def 🎯
-            </span>
-          )}
-          {account.vipLevel < 17 && (
-            <span className="px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
-              VIP {account.vipLevel}
-            </span>
-          )}
-          <span className=" px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
-            <RiSpeedFill />
-            {account.speed} days Speed
-          </span>
-          <span className=" px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
-            <RiTicket2Line />
-            {account.tickets} Vé
-          </span>
-          {account.city_themes?.length ? (
-            <span className=" px-2 py-1 rounded-full inline-flex items-center gap-x-1 border border-white/20">
-              <LuCastle />
-              {account.city_themes?.length} nhà HT
-            </span>
-          ) : null}
-        </div>
-
-        <div className="text-lg font-bold text-yellow-400">
-          {convertToShortText(Number(account.price).toFixed(2))} (VNĐ)
-        </div>
-
-        <div className="text-xs text-gray-400 flex justify-between items-center">
-          <span className="flex items-center gap-1">
-            <Flashlight size={14} />
-            {new Date(account.createdAt).toLocaleDateString()}
-          </span>
-          <span className="italic">{getStatusLabel(account.saleStatus)}</span>
-        </div>
-
-        <div className="mt-3 pt-3 border-t border-gray-700 flex justify-between items-center">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-gray-400 hover:text-yellow-400 hover:bg-gray-700 cursor-pointer"
-            onClick={() => setIsQuickViewOpen(true)}
+          <span
+            className={`bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full`}
           >
-            <FiEye className="mr-1.5 h-3 w-3" /> Xem nhanh
-          </Button>
-          <Link href={`/account/${account.documentId}`} passHref>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs bg-transparent hover:bg-gray-700 hover:text-yellow-400 cursor-pointer"
+            {account.vipLevel === 20 ? (
+              <span className="flex items-center font-bold">
+                SVIP
+                <img
+                  src="/images/SVIP.webp"
+                  alt="SVIP"
+                  className="svip-inline-badge inline-block"
+                />
+              </span>
+            ) : (
+              <span
+                className={`${account.vipLevel >= 18 ? "fire-effect" : ""}`}
+              >
+                {`VIP ${account.vipLevel}`}
+              </span>
+            )}
+          </span>
+          {account.keyRally && (
+            <span className="bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+              Key Rally
+            </span>
+          )}
+        </div>
+
+        <ul className="text-sm text-gray-600 space-y-0.5 mt-1">
+          <li>📅 {account.speed} days speed</li>
+          <li>🎫 {account.tickets} vé</li>
+          <li>🏰 {account.city_themes?.length} nhà HT</li>
+        </ul>
+
+        <div className="flex justify-between items-center mt-3">
+          <span className="text-xl font-bold text-yellow-600">
+            {convertToShortText(Number(account.price).toFixed(2))} (VND)
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onQuickView(account)}
+              className="text-sm bg-blue-500 text-white px-3 py-1 rounded-lg hover:bg-blue-600 cursor-pointer"
             >
-              Xem đầy đủ <FiExternalLink className="ml-1.5 h-3 w-3" />
-            </Button>
-          </Link>
+              Xem nhanh
+            </button>
+            <Link href={`/account/${account.documentId}`} passHref>
+              <button className="text-sm bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600 cursor-pointer">
+                Xem đầy đủ
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
-      {isQuickViewOpen && (
-        <AccountQuickViewModal
-          account={account}
-          isOpen={isQuickViewOpen}
-          onOpenChange={setIsQuickViewOpen}
-        />
-      )}
-    </motion.div>
+    </div>
   );
 };
 
