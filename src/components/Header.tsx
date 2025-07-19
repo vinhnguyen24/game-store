@@ -94,7 +94,7 @@ export default function Header() {
               className="ml-4"
             >
               <AuthModal>
-                <FiUser className="w-5 h-5" />
+                <FiUser className="w-5 h-5 cursor-pointer" />
               </AuthModal>
             </motion.div>
           </motion.nav>

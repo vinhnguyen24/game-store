@@ -3,21 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import {
-  // FiUser, // Removed
-  // FiSettings, // Removed
-  FiShoppingCart,
-  FiTag,
-  FiList,
-  // FiBarChart2, // Removed
-  FiEdit3,
-} from "react-icons/fi";
+import { FiShoppingCart, FiTag, FiList, FiEdit } from "react-icons/fi";
+import { NegotiationModal } from "@/components/NegotiationModal";
+import { apiFetch } from "@/lib/api";
+import { convertToShortText } from "@/helper/common";
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL_DOMAIN || "http://localhost:1340";
-// --- Mock Tabs Implementation (Placeholder) ---
-// Replace this with actual shadcn/ui Tabs import once added to the project
 
-// Define Props for TabsTrigger, including injected props
 interface TabsTriggerProps {
   value: string;
   className?: string;
@@ -131,90 +123,182 @@ const TabsContent = ({
   currentValue?: string;
 }) =>
   currentValue === value ? <div className={className}>{children}</div> : null;
-// --- End Mock Tabs Implementation ---
-
-// Mock user data - replace with actual data fetching later
-const mockUser = {
-  username: "John Doe",
-  email: "john.doe@example.com",
-  avatar: "/images/default-account.jpg", // Using existing default image
-  createdAt: "2023-01-15",
-  bio: "Loves gaming and finding the best deals!",
-  isSeller: true, // Example flag
-  stats: {
-    listingsActive: 5,
-    totalSold: 12,
-    totalPurchased: 3,
-  },
-};
-
-// Mock data for listings and purchases - replace with actual data
-const mockListings = [
-  {
-    id: "l1",
-    title: "ROK VIP 15 Account",
-    price: 50,
-    status: "Active",
-    views: 120,
-  },
-  {
-    id: "l2",
-    title: "COC TH14 Maxed",
-    price: 120,
-    status: "Active",
-    views: 300,
-  },
-  {
-    id: "l3",
-    title: "Genshin AR60 Whale",
-    price: 250,
-    status: "Sold",
-    views: 500,
-  },
-];
 
 const mockPurchases = [
-  { id: "p1", title: "Clash Royale Max Lvl", price: 30, date: "2024-05-20" },
   {
-    id: "p2",
-    title: "Brawl Stars Full Brawlers",
+    id: 1,
+    title: "Account for game X",
     price: 75,
-    date: "2024-04-10",
+    date: "2023-10-01T12:00:00Z",
   },
 ];
 
+interface Negotiation {
+  id: number;
+  buyerZalo: string;
+  offeredPrice: number;
+  statusTransaction:
+    | "pending"
+    | "countered"
+    | "accepted"
+    | "rejected"
+    | "waiting_for_seller";
+  message: string;
+  messageFromSeller: string;
+  createdAt: string;
+}
+
+interface NegotiationResponse {
+  data: Negotiation[];
+}
+
+interface Account {
+  id: number;
+  title: string;
+  price: number;
+  status: string;
+  views: number;
+  saleStatus: "sale" | "sold";
+  negotiations?: NegotiationResponse;
+}
+
+interface UserApiResponse {
+  id: number;
+  username: string;
+  email: string;
+  createdAt: string;
+  isSeller: boolean;
+  stats?: {
+    listingsActive: number;
+    totalSold: number;
+    totalPurchased: number;
+  };
+  avatar: {
+    url: string;
+    formats?: {
+      thumbnail?: {
+        url: string;
+      };
+    };
+  } | null;
+  accounts: Account[];
+}
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  avatar: string | null;
+  createdAt: string;
+  isSeller: boolean;
+  stats?: {
+    listingsActive: number;
+    totalSold: number;
+    totalPurchased: number;
+  };
+  accounts: Account[];
+}
+
 const ProfilePage = () => {
-  const [user, setUser] = useState(mockUser); // Removed setUser
-  const [activeTab, setActiveTab] = useState(
-    user?.isSeller ? "myListings" : "purchaseHistory"
-  );
+  const [user, setUser] = useState<User | null>(null);
+  const [activeTab, setActiveTab] = useState("myListings");
+  const [listListing, setListListing] = useState<Account[]>([]);
+  const [listSold, setListSold] = useState<Account[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleOpenModal = (account: Account) => {
+    setSelectedAccount(account);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedAccount(null);
+    setIsModalOpen(false);
+  };
 
   useEffect(() => {
-    const userStorage = localStorage.getItem("user")
-      ? JSON.parse(localStorage.getItem("user") as string)
-      : null;
-    const imageUrl =
-      userStorage?.avatar?.formats?.thumbnail?.url || userStorage?.avatar?.url;
-    const fullUrl = imageUrl.startsWith("http")
-      ? imageUrl
-      : `${BASE_URL}${imageUrl}`;
-    userStorage.avatar = fullUrl;
-    setUser(userStorage);
+    const fetchUserData = async () => {
+      try {
+        const data = (await apiFetch(
+          `/users/me?populate=avatar&populate=accounts`
+        )) as UserApiResponse;
+
+        if (data && data.accounts) {
+          const listings = data.accounts.filter(
+            (item) => item.saleStatus === "sale"
+          );
+          const sold = data.accounts.filter(
+            (item) => item.saleStatus === "sold"
+          );
+
+          const listingsWithNegotiations = await Promise.all(
+            listings.map(async (listing) => {
+              const negotiations = (await apiFetch(
+                `/negotiations?filters[account][id][$eq]=${listing.id}`
+              )) as NegotiationResponse;
+
+              return { ...listing, negotiations };
+            })
+          );
+          console.log(listingsWithNegotiations);
+          setListListing(listingsWithNegotiations);
+          setListSold(sold);
+        }
+
+        const imageUrl =
+          data.avatar?.formats?.thumbnail?.url || data.avatar?.url;
+        const fullUrl = imageUrl
+          ? imageUrl.startsWith("http")
+            ? imageUrl
+            : `${BASE_URL}${imageUrl}`
+          : "/images/default-account.jpg";
+        const userWithAvatar = { ...data, avatar: fullUrl };
+        setUser(userWithAvatar);
+        localStorage.setItem("user", JSON.stringify(userWithAvatar));
+      } catch (error) {
+        console.error("Failed to fetch user data, trying localStorage", error);
+        const userJson = localStorage.getItem("user");
+        if (userJson) {
+          const userStorage = JSON.parse(userJson);
+          // Ensure avatar URL is still processed even from localStorage
+          const imageUrl =
+            userStorage?.avatar?.formats?.thumbnail?.url ||
+            userStorage?.avatar?.url;
+          const fullUrl = imageUrl
+            ? imageUrl.startsWith("http")
+              ? imageUrl
+              : `${BASE_URL}${imageUrl}`
+            : "/images/default-account.jpg";
+          userStorage.avatar = fullUrl;
+          setUser(userStorage);
+        }
+      }
+    };
+
+    fetchUserData();
   }, []);
 
   // Placeholder functions for actions
   const handleEditProfile = () => alert("Edit profile clicked!");
-  const handleCreateListing = () => alert("Create new listing clicked!");
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        Loading profile...
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen bg-gray-50">
+    <div className="container mx-auto px-4 py-8 min-h-screen bg-gray-50 text-gray-500">
       {/* Profile Header */}
       <header className="bg-white shadow-md rounded-lg p-6 mb-8">
         <div className="flex flex-col md:flex-row items-center">
           <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-blue-500 mb-4 md:mb-0 md:mr-6">
             <Image
               src={user.avatar ?? "/images/default-account.jpg"}
-              alt={user.username}
+              alt={user.username ?? "User avatar"}
               fill
               className="object-cover"
               sizes="160px"
@@ -225,18 +309,11 @@ const ProfilePage = () => {
               {user.username}
             </h1>
             <p className="text-md text-gray-600">{user.email}</p>
-            <p className="text-sm text-gray-500 mt-1">
-              Joined: {new Date(user.createdAt).toLocaleDateString()}
-            </p>
-            <p className="text-sm text-gray-700 mt-2 max-w-md">{user.bio}</p>
-            <Button
-              onClick={handleEditProfile}
-              variant="outline"
-              size="sm"
-              className="mt-4"
-            >
-              <FiEdit3 className="mr-2 h-4 w-4" /> Edit Profile
-            </Button>
+            {user.createdAt && (
+              <p className="text-sm text-gray-500 mt-1">
+                Tham gia: {new Date(user.createdAt).toLocaleDateString()}
+              </p>
+            )}
           </div>
         </div>
       </header>
@@ -245,24 +322,26 @@ const ProfilePage = () => {
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div
           className="bg-white shadow rounded-lg p-6 flex items-center space-x-4 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => user.isSeller && setActiveTab("myListings")}
+          onClick={() => setActiveTab("myListings")}
         >
           <FiList className="text-3xl text-blue-500" />
           <div>
-            <p className="text-2xl font-semibold">
-              {user.stats?.listingsActive}
+            <p className="text-gray-500">Account đang bán </p>
+            <p className="text-2xl font-semibold text-gray-500">
+              {listListing?.length}
             </p>
-            <p className="text-gray-500">Active Listings</p>
           </div>
         </div>
         <div
           className="bg-white shadow rounded-lg p-6 flex items-center space-x-4 cursor-pointer hover:shadow-lg transition-shadow"
-          onClick={() => user.isSeller && setActiveTab("myListings")} // Or a dedicated "sold items" tab if created
+          onClick={() => setActiveTab("soldItems")}
         >
           <FiTag className="text-3xl text-green-500" />
           <div>
-            <p className="text-2xl font-semibold">{user.stats?.totalSold}</p>
-            <p className="text-gray-500">Items Sold</p>
+            <p className="text-gray-500">Account đã bán</p>
+            <p className="text-2xl font-semibold text-gray-500">
+              {listSold?.length}
+            </p>
           </div>
         </div>
         <div
@@ -279,81 +358,110 @@ const ProfilePage = () => {
         </div>
       </section>
 
-      {/* Tabs for Listings, Purchases, Settings */}
       <Tabs
         defaultValue={activeTab}
         onValueChange={setActiveTab}
         className="w-full"
       >
         <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 bg-gray-200 p-1 rounded-lg mb-6">
-          {user.isSeller && (
-            <TabsTrigger
-              value="myListings"
-              className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-            >
-              My Listings
-            </TabsTrigger>
-          )}
+          <TabsTrigger
+            value="myListings"
+            className="data-[state=active]:bg-blue-500 data-[state=active]:text-white cursor-pointer"
+          >
+            Account Đang bán
+          </TabsTrigger>
+          <TabsTrigger
+            value="soldItems"
+            className="data-[state=active]:bg-green-500 data-[state=active]:text-white cursor-pointer"
+          >
+            Account đã bán
+          </TabsTrigger>
           <TabsTrigger
             value="purchaseHistory"
-            className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
+            className="data-[state=active]:bg-purple-500 data-[state=active]:text-white cursor-pointer"
           >
             Purchase History
           </TabsTrigger>
-          <TabsTrigger
-            value="settings"
-            className="data-[state=active]:bg-blue-500 data-[state=active]:text-white"
-          >
-            Account Settings
-          </TabsTrigger>
         </TabsList>
 
-        {user.isSeller && (
-          <TabsContent
-            value="myListings"
-            className="bg-white shadow rounded-lg p-6"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-semibold">
-                My Game Accounts for Sale
-              </h2>
-              <Button onClick={handleCreateListing}>
-                <FiEdit3 className="mr-2 h-4 w-4" /> Create New Listing
-              </Button>
-            </div>
-            {mockListings.length > 0 ? (
-              <div className="space-y-4">
-                {mockListings.map((listing) => (
-                  <div
-                    key={listing.id}
-                    className="border p-4 rounded-md hover:shadow-lg transition-shadow"
+        <TabsContent
+          value="myListings"
+          className="bg-white shadow rounded-lg p-6"
+        >
+          <div className="flex justify-between items-center mb-4 ">
+            <h2 className="text-2xl font-semibold">
+              Danh sách account đang bán của bạn
+            </h2>
+          </div>
+          {listListing.length > 0 ? (
+            <div className="space-y-4">
+              {listListing.map((listing) => (
+                <div
+                  key={listing.id}
+                  className="border p-4 rounded-md hover:shadow-lg transition-shadow"
+                >
+                  <h3 className="text-lg font-medium text-blue-600">
+                    {listing.title}
+                  </h3>
+                  <p>
+                    Giá:{" "}
+                    <span className="text-xl font-bold text-yellow-600">
+                      {convertToShortText(Number(listing.price).toFixed(2))}{" "}
+                      (VND)
+                    </span>
+                  </p>
+                  <p>
+                    Trạng thái:{" "}
+                    <span className="font-semibold text-green-600">
+                      Đang bán
+                    </span>
+                  </p>
+                  <p>
+                    Số lượt thương lượng:{" "}
+                    {listing.negotiations?.data?.length ?? 0}
+                  </p>
+                  <Button
+                    className="mt-2  cursor-pointer"
+                    onClick={() => handleOpenModal(listing)}
                   >
-                    <h3 className="text-lg font-medium text-blue-600">
-                      {listing.title}
-                    </h3>
-                    <p>Price: ${listing.price}</p>
-                    <p>
-                      Status:{" "}
-                      <span
-                        className={`font-semibold ${
-                          listing.status === "Active"
-                            ? "text-green-600"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {listing.status}
-                      </span>
-                    </p>
-                    <p>Views: {listing.views}</p>
-                    {/* Add edit/delete buttons here */}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p>You have no active listings.</p>
-            )}
-          </TabsContent>
-        )}
+                    <FiEdit className="mr-2 h-4 w-4" /> Xem
+                  </Button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>You have no active listings.</p>
+          )}
+        </TabsContent>
+        <TabsContent
+          value="soldItems"
+          className="bg-white shadow rounded-lg p-6"
+        >
+          <h2 className="text-2xl font-semibold">Danh sách account đã bán</h2>
+          {listSold.length > 0 ? (
+            <div className="space-y-4">
+              {listSold.map((item) => (
+                <div key={item.id} className="border p-4 rounded-md bg-gray-50">
+                  <h3 className="text-lg font-medium text-gray-800">
+                    {item.title}
+                  </h3>
+                  <p>
+                    Giá:{" "}
+                    <span className="text-xl font-bold text-yellow-600">
+                      {convertToShortText(Number(item.price).toFixed(2))} (VND)
+                    </span>
+                  </p>
+                  <p>
+                    Trạng thái:{" "}
+                    <span className="font-semibold text-red-600">Đã bán</span>
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p>You haven&apos;t sold any accounts yet.</p>
+          )}
+        </TabsContent>
 
         <TabsContent
           value="purchaseHistory"
@@ -374,7 +482,7 @@ const ProfilePage = () => {
               ))}
             </div>
           ) : (
-            <p>You haven't purchased any accounts yet.</p>
+            <p>You haven&apos;t purchased any accounts yet.</p>
           )}
         </TabsContent>
 
@@ -389,7 +497,11 @@ const ProfilePage = () => {
               <p className="text-sm text-gray-600">
                 Update your name, email, and bio.
               </p>
-              <Button variant="outline" className="mt-2">
+              <Button
+                variant="outline"
+                className="mt-2"
+                onClick={handleEditProfile}
+              >
                 Edit Profile Info
               </Button>
             </div>
@@ -423,6 +535,14 @@ const ProfilePage = () => {
           </div>
         </TabsContent>
       </Tabs>
+      {selectedAccount && (
+        <NegotiationModal
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          negotiations={selectedAccount.negotiations?.data ?? []}
+          accountTitle={selectedAccount.title}
+        />
+      )}
     </div>
   );
 };
