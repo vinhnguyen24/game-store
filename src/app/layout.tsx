@@ -5,6 +5,7 @@ import "./globals.css";
 import { Cinzel, Bebas_Neue, Rajdhani, Anton } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "keen-slider/keen-slider.min.css";
+import { Providers } from "./providers";
 const cinzel = Cinzel({
   subsets: ["latin"],
   weight: "700",
@@ -41,9 +42,11 @@ export default function RootLayout({
       <body
         className={`bg-gray-900 text-gray-200 min-h-screen ${cinzel.variable} ${bebas.variable} ${rajdhani.variable} ${anton.variable}`}
       >
-        <Header />
-        {children}
-        <Toaster position="top-right" richColors />
+        <Providers>
+          <Header />
+          {children}
+          <Toaster position="top-right" richColors />
+        </Providers>
       </body>
     </html>
   );

@@ -1,42 +1,84 @@
 "use client";
 
 import { useState } from "react";
-import { FiUser, FiLogIn, FiUserPlus } from "react-icons/fi";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
-import { apiFetch } from "@/lib/api";
-import { usePathname } from "next/navigation";
+import { FiUser } from "react-icons/fi";
+
+interface FormState {
+  identifier: string;
+  password: string;
+  username?: string;
+  email?: string;
+}
 
 type AuthModalProps = {
   children?: React.ReactNode;
 };
 
 export default function AuthModal({ children }: AuthModalProps) {
-  const { user, login } = useAuth();
-  const pathName = usePathname();
   const router = useRouter();
+  const [form, setForm] = useState<FormState>({ identifier: "", password: "" });
   const [isLogin, setIsLogin] = useState(true);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    username: "",
-    email: "",
-    identifier: "",
-    password: "",
-  });
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      if (isLogin) {
+        const res = await signIn("credentials", {
+          redirect: false,
+          identifier: form.identifier,
+          password: form.password,
+        });
+
+        if (res?.error) {
+          setError("Sai tên tài khoản hoặc mật khẩu.");
+        } else {
+          setOpen(false);
+          router.push("/profile");
+        }
+      } else {
+        const res = await apiFetch<{ jwt: string; user: any }>(
+          "/auth/local/register",
+          {
+            method: "POST",
+            data: {
+              username: form.username,
+              email: form.email,
+              password: form.password,
+            },
+          }
+        );
+        setPendingEmail(res.user.email);
+      }
+    } catch (err: any) {
+      setError(err.message || "Đã có lỗi xảy ra.");
+    }
+
+    setLoading(false);
+  };
+
+  const handleInputChange = (key: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
   const handleClick = () => {
     if (user) {
       router.push("/profile");
@@ -44,62 +86,6 @@ export default function AuthModal({ children }: AuthModalProps) {
       setOpen(true);
     }
   };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({
-      ...prev,
-      [e.target.id]: e.target.value,
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setPendingEmail(null); // reset nếu trước đó đã có email pending
-
-    try {
-      const endpoint = isLogin ? "/auth/local" : "/auth/local/register";
-      const data = isLogin
-        ? { identifier: form.identifier, password: form.password }
-        : {
-            username: form.username,
-            email: form.email,
-            password: form.password,
-          };
-
-      const res = await apiFetch<{ jwt: string; user: any }>(endpoint, {
-        method: "POST",
-        data,
-      });
-
-      if (isLogin) {
-        login(res.user, res.jwt);
-        setOpen(false);
-        if (!pathName.startsWith("/account")) {
-          router.push("/profile");
-        } else {
-          window.location.reload();
-        }
-      } else {
-        setPendingEmail(form.email);
-      }
-    } catch (err: any) {
-      console.log(err);
-      if (err?.message === "Your account email is not confirmed") {
-        setError(
-          "Tài khoản của bạn chưa xác minh email. Vui lòng kiểm tra hòm thư."
-        );
-      } else if (err?.message === "Invalid identifier or password") {
-        setError("Sai tên tài khoản hoặc mật khẩu!");
-      } else {
-        setError(err?.message || "Đã xảy ra lỗi.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -113,120 +99,77 @@ export default function AuthModal({ children }: AuthModalProps) {
           {children ?? <FiUser className="w-5 h-5" />}
         </button>
       </DialogTrigger>
+      <DialogContent className="max-w-md w-full">
+        <DialogTitle />
+        <Tabs
+          defaultValue="login"
+          className="w-full"
+          onValueChange={(val: string) => setIsLogin(val === "login")}
+        >
+          <TabsList className="grid grid-cols-2 mb-4">
+            <TabsTrigger value="login">Đăng nhập</TabsTrigger>
+            <TabsTrigger value="register">Đăng ký</TabsTrigger>
+          </TabsList>
 
-      <DialogContent className="max-w-md p-6">
-        <DialogHeader className="flex flex-row items-center justify-between">
-          <DialogTitle className="text-xl text-[#2c2f4b]">
-            {isLogin ? "Đăng nhập" : "Đăng ký"}
-          </DialogTitle>
-        </DialogHeader>
-        {pendingEmail ? (
-          <div className="text-center space-y-4 py-6">
-            <h2 className="text-xl font-semibold text-[#2c2f4b]">
-              Vui lòng xác minh email
-            </h2>
-            <p className="text-sm text-gray-600">
-              Chúng tôi đã gửi một email xác minh đến{" "}
-              <strong>{pendingEmail}</strong>.
-              <br />
-              Hãy kiểm tra hộp thư đến của bạn và xác nhận để hoàn tất đăng ký.
-            </p>
+          <TabsContent value="login">
+            <Input
+              placeholder="Email hoặc Tên người dùng"
+              value={form.identifier}
+              onChange={(e) => handleInputChange("identifier", e.target.value)}
+              className="mb-3"
+            />
+            <Input
+              placeholder="Mật khẩu"
+              type="password"
+              value={form.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              className="mb-4"
+            />
+            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
             <Button
-              onClick={() => {
-                setOpen(false);
-                setForm({
-                  username: "",
-                  email: "",
-                  identifier: "",
-                  password: "",
-                });
-              }}
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full"
             >
-              Đóng
+              {loading ? "Đang xử lý..." : "Đăng nhập"}
             </Button>
-          </div>
-        ) : (
-          <form className="space-y-4 mt-4" onSubmit={handleSubmit}>
-            {!isLogin && (
-              <div className="space-y-2 text-[#2c2f4b]">
-                <Label htmlFor="username">Tên người dùng</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  placeholder="Nhập tên người dùng"
-                  value={form.username}
-                  onChange={handleChange}
-                />
-              </div>
+          </TabsContent>
+
+          <TabsContent value="register">
+            <Input
+              placeholder="Tên người dùng"
+              value={form.username || ""}
+              onChange={(e) => handleInputChange("username", e.target.value)}
+              className="mb-3"
+            />
+            <Input
+              placeholder="Email"
+              value={form.email || ""}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              className="mb-3"
+            />
+            <Input
+              placeholder="Mật khẩu"
+              type="password"
+              value={form.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
+              className="mb-4"
+            />
+            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+            {pendingEmail && (
+              <p className="text-green-500 text-sm mb-2">
+                Tạo tài khoản thành công: {pendingEmail}
+              </p>
             )}
-
-            {isLogin ? (
-              <div className="space-y-2 text-[#2c2f4b]">
-                <Label htmlFor="identifier">Email hoặc tên người dùng</Label>
-                <Input
-                  id="identifier"
-                  type="text"
-                  placeholder="Nhập email hoặc tên người dùng của bạn"
-                  value={form.identifier}
-                  onChange={handleChange}
-                />
-              </div>
-            ) : (
-              <div className="space-y-2 text-[#2c2f4b]">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Nhập email của bạn"
-                  value={form.email}
-                  onChange={handleChange}
-                />
-              </div>
-            )}
-
-            <div className="space-y-2 text-[#2c2f4b]">
-              <Label htmlFor="password">Mật khẩu</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Nhập mật khẩu"
-                value={form.password}
-                onChange={handleChange}
-              />
-            </div>
-
-            {error && (
-              <div className="text-sm text-red-500 text-center">{error}</div>
-            )}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? (
-                "Đang xử lý..."
-              ) : isLogin ? (
-                <div className="flex items-center gap-2">
-                  <FiLogIn className="w-4 h-4" />
-                  Đăng nhập
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <FiUserPlus className="w-4 h-4" />
-                  Đăng ký
-                </div>
-              )}
+            <Button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="w-full"
+            >
+              {loading ? "Đang xử lý..." : "Đăng ký"}
             </Button>
-
-            <div className="text-center text-sm text-[#2c2f4b]">
-              {isLogin ? "Chưa có tài khoản?" : "Đã có tài khoản?"}{" "}
-              <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-blue-600 hover:underline font-medium"
-              >
-                {isLogin ? "Tạo tài khoản mới" : "Đăng nhập ngay"}
-              </button>
-            </div>
-          </form>
-        )}
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

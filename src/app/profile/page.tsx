@@ -220,9 +220,10 @@ const ProfilePage = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const data = (await apiFetch(
-          `/users/me?populate=avatar&populate=accounts`
-        )) as UserApiResponse;
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) throw new Error("Lỗi khi lấy thông tin user");
+
+        const data = (await res.json()) as UserApiResponse;
 
         if (data && data.accounts) {
           const listings = data.accounts.filter(
@@ -234,9 +235,12 @@ const ProfilePage = () => {
 
           const listingsWithNegotiations = await Promise.all(
             listings.map(async (listing) => {
-              const negotiations = (await apiFetch(
-                `/negotiations?filters[account][id][$eq]=${listing.id}`
-              )) as NegotiationResponse;
+              const res = await fetch(
+                `/api/negotiations?accountId=${listing.id}`
+              );
+              if (!res.ok) throw new Error("Lỗi khi fetch negotiations");
+
+              const negotiations = (await res.json()) as NegotiationResponse;
 
               return { ...listing, negotiations };
             })
