@@ -1,7 +1,6 @@
 // lib/auth.ts
 import CredentialsProvider from "next-auth/providers/credentials";
 import { NextAuthOptions } from "next-auth";
-import { apiFetch } from "./api";
 
 export const authOptions: NextAuthOptions = {
   providers: [

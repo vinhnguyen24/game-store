@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { Account } from "@/types/account";
 import {
   Dialog,
@@ -9,8 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,9 +18,6 @@ import {
   FiStar,
   FiCpu,
   FiPaperclip,
-  FiCheckCircle,
-  FiXCircle,
-  FiClock,
   FiKey,
   FiExternalLink,
 } from "react-icons/fi";
@@ -58,18 +52,6 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
     // onOpenChange(false);
   };
 
-  const renderSaleStatusIcon = () => {
-    switch (account.saleStatus) {
-      case "sale":
-        return <FiCheckCircle className="text-green-500" title="Đang bán" />;
-      case "pending":
-        return <FiClock className="text-yellow-500" title="Đang chờ" />;
-      case "cancel":
-        return <FiXCircle className="text-red-500" title="Đã hủy" />;
-      default:
-        return <FiCheckCircle className="text-green-500" title="Đang bán" />;
-    }
-  };
   const commanderLines = (account.commander ?? "")
     .split("|")
     .map((s) => s.trim())

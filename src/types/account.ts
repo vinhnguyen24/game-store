@@ -47,7 +47,6 @@ export interface Media {
   caption?: string;
   width?: number;
   height?: number;
-  formats?: any;
   mime: string;
   size: number;
 }

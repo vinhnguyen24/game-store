@@ -8,9 +8,9 @@ import { vesionMap } from "@/helper/common";
 interface TitleHeaderProps {
   id: number;
   title: string;
-  version: string;
+  version: VersionKey;
 }
-
+type VersionKey = keyof typeof vesionMap;
 const TitleHeader = ({ id, title, version }: TitleHeaderProps) => (
   <div className="mb-6 flex flex-wrap items-center gap-4 ">
     <Link href="/" passHref>

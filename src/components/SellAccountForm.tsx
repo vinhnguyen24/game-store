@@ -21,6 +21,7 @@ import { ImageManagerModal } from "./ImageManagerModal";
 import { apiFetch } from "@/lib/api";
 import { getSuggestedPrice } from "./priceSuggestor";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 interface UploadResponse {
   id: number;
@@ -80,9 +81,16 @@ export function SellAccountForm({
     equipment_emblems: "",
     keyRally: false,
     legendaryHouse: "",
+    documentId: "",
+    sellerName: "",
+    city_themes: [],
+    thumbnail: {
+      url: "",
+    },
   };
   const [formData, setFormData] =
     useState<SellAccountFormData>(initialFormData);
+  const router = useRouter();
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
@@ -175,18 +183,27 @@ export function SellAccountForm({
           ...(uploadedImageIds.length > 0 && { images: uploadedImageIds }),
         },
       };
-
-      // Remove unwanted field
+      delete (params.data as any).documentId;
       delete (params.data as any).legendaryHouse;
-      // 4. Create account
-      await apiFetch<{ data: SellAccountFormData }>("/accounts", {
-        method: "POST",
-        data: params,
-      });
-      // 5. Reset form (uncomment when ready)
-      // resetForm();
 
-      toast.success("Đăng bán account thành công!");
+      const res = await fetch("/api/accounts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(params),
+      });
+
+      const json = await res.json();
+
+      if (json.success) {
+        toast.success("Đăng bán account thành công!");
+        router.refresh();
+        onOpenChange(false);
+      } else {
+        toast.error("Đăng bán thất bại: " + json.error);
+        onOpenChange(false);
+      }
     } catch (error) {
       console.error("Error in handleSubmit:", error);
       toast.error(

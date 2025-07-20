@@ -4,7 +4,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Account } from "@/types/account";
 import { Button } from "@/components/ui/button";
-import { SellAccountForm } from "@/components/SellAccountForm";
 import { FiSearch } from "react-icons/fi";
 import AccountCard from "@/components/AccountCard";
 import AccountQuickViewModal from "@/components/AccountQuickViewModal";
@@ -16,26 +15,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-type CityThemes = {
-  id: number;
-  name: string;
-  type: "infantry" | "archer" | "cavalry" | "mix" | "ultility";
-  buff: string;
-  image: {
-    url: string;
-  };
-}[];
+import { useCityThemes } from "@/context/CityThemeContext";
+
 interface CertificationsProps {
   account: Account[];
-  cityThemes: CityThemes;
 }
 
-const HomePage = ({ account, cityThemes }: CertificationsProps) => {
+const HomePage = ({ account }: CertificationsProps) => {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error] = useState(""); // Removed setError, as it's unused
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSellModalOpen, setIsSellModalOpen] = useState(false);
+  const cityThemes = useCityThemes();
   const [selectedVips, setSelectedVips] = useState<number[]>([]);
   const [selectedLegendary, setSelectedLegendary] = useState<string[]>([]);
   const [isLegendaryModalOpen, setIsLegendaryModalOpen] = useState(false);
@@ -148,12 +139,6 @@ const HomePage = ({ account, cityThemes }: CertificationsProps) => {
       {/* Account List Section */}
       <div ref={accountsSectionRef} className="bg-[#121421] py-12">
         <div className="container mx-auto px-4">
-          <SellAccountForm
-            isOpen={isSellModalOpen}
-            onOpenChange={setIsSellModalOpen}
-            citiThemes={cityThemes}
-          />
-
           {/* Search & Filters */}
           <div className="flex flex-col md:flex-row items-center gap-4 my-6 bg-gray-800/50 p-6 rounded-xl">
             <div className="relative w-full md:flex-grow">

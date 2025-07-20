@@ -41,6 +41,7 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
   try {
     json = await res.json();
   } catch (e) {
+    console.error(e);
     parseErrorOccurred = true;
   }
 

@@ -1,19 +1,16 @@
 import HomePage from "@/components/HomePage/HomePage";
 import { apiFetch } from "@/lib/api";
+import { Account } from "@/types/account";
 
+type AccountResponse = {
+  data: Account[];
+};
 export default async function page() {
-  let data;
-  let cityThemeData;
+  let data: AccountResponse | null = null;
   try {
     data = await apiFetch("/accounts?populate=*", {
       method: "GET",
     });
-    cityThemeData = await apiFetch(
-      "/city-themes?populate=*&pagination[pageSize]=100",
-      {
-        method: "GET",
-      }
-    );
   } catch (err) {
     console.error(err);
   } finally {
@@ -21,7 +18,7 @@ export default async function page() {
 
   return (
     <main>
-      <HomePage account={data?.data} cityThemes={cityThemeData?.data} />
+      <HomePage account={data?.data || []} />
     </main>
   );
 }

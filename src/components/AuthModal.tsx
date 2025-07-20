@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import {
@@ -15,12 +15,25 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { FiUser } from "react-icons/fi";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 interface FormState {
   identifier: string;
   password: string;
   username?: string;
   email?: string;
+}
+
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  // thêm các field khác nếu cần
 }
 
 type AuthModalProps = {
@@ -56,7 +69,7 @@ export default function AuthModal({ children }: AuthModalProps) {
           router.push("/profile");
         }
       } else {
-        const res = await apiFetch<{ jwt: string; user: any }>(
+        const res = await apiFetch<{ jwt: string; user: User }>(
           "/auth/local/register",
           {
             method: "POST",
@@ -69,8 +82,12 @@ export default function AuthModal({ children }: AuthModalProps) {
         );
         setPendingEmail(res.user.email);
       }
-    } catch (err: any) {
-      setError(err.message || "Đã có lỗi xảy ra.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Đã có lỗi xảy ra.");
+      }
     }
 
     setLoading(false);
@@ -79,13 +96,29 @@ export default function AuthModal({ children }: AuthModalProps) {
   const handleInputChange = (key: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
-  const handleClick = () => {
-    if (user) {
-      router.push("/profile");
-    } else {
-      setOpen(true);
-    }
-  };
+
+  // 👉 Nếu đã đăng nhập thì show dropdown menu
+  if (user) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button className="p-2 rounded-full transition-colors">
+            {children ?? <FiUser className="w-5 h-5" />}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" sideOffset={8}>
+          <DropdownMenuItem onClick={() => router.push("/profile")}>
+            Trang cá nhân
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
+            Đăng xuất
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  // 👉 Nếu chưa đăng nhập thì show modal đăng nhập/đăng ký
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -93,7 +126,7 @@ export default function AuthModal({ children }: AuthModalProps) {
           className="p-2 rounded-full transition-colors"
           onClick={(e) => {
             e.preventDefault();
-            handleClick();
+            setOpen(true);
           }}
         >
           {children ?? <FiUser className="w-5 h-5" />}
@@ -116,14 +149,14 @@ export default function AuthModal({ children }: AuthModalProps) {
               placeholder="Email hoặc Tên người dùng"
               value={form.identifier}
               onChange={(e) => handleInputChange("identifier", e.target.value)}
-              className="mb-3"
+              className="mb-3 text-gray-500"
             />
             <Input
               placeholder="Mật khẩu"
               type="password"
               value={form.password}
               onChange={(e) => handleInputChange("password", e.target.value)}
-              className="mb-4"
+              className="mb-4 text-gray-500"
             />
             {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
             <Button
@@ -140,20 +173,20 @@ export default function AuthModal({ children }: AuthModalProps) {
               placeholder="Tên người dùng"
               value={form.username || ""}
               onChange={(e) => handleInputChange("username", e.target.value)}
-              className="mb-3"
+              className="mb-3 text-gray-500"
             />
             <Input
               placeholder="Email"
               value={form.email || ""}
               onChange={(e) => handleInputChange("email", e.target.value)}
-              className="mb-3"
+              className="mb-3 text-gray-500"
             />
             <Input
               placeholder="Mật khẩu"
               type="password"
               value={form.password}
               onChange={(e) => handleInputChange("password", e.target.value)}
-              className="mb-4"
+              className="mb-4 text-gray-500"
             />
             {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
             {pendingEmail && (

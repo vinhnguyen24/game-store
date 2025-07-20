@@ -18,12 +18,7 @@ interface Negotiation {
   id: number;
   buyerZalo: string;
   offeredPrice: number;
-  statusTransaction:
-    | "pending"
-    | "waiting_for_seller"
-    | "accepted"
-    | "rejected"
-    | "countered";
+  statusTransaction: "pending" | "waiting_for_seller" | "accepted" | "rejected";
   message: string;
   messageFromSeller: string;
 }
@@ -35,6 +30,13 @@ interface NegotiationModalProps {
   accountTitle: string;
 }
 
+const statusMapping = {
+  accepted: "Chấp nhận",
+  rejected: "Từ chối",
+  waiting_for_seller: "Đang chờ phản hồi",
+  pending: "Đang chờ người mua phản hồi",
+};
+
 export const NegotiationModal = ({
   isOpen,
   onClose,
@@ -42,13 +44,6 @@ export const NegotiationModal = ({
   accountTitle,
 }: NegotiationModalProps) => {
   const [message, setMessage] = useState("");
-
-  const statusMapping = {
-    accepted: "Chấp nhận",
-    rejected: "Từ chối",
-    waiting_for_seller: "Đang chờ phản hồi",
-    pending: "Đang chờ người mua phản hồi",
-  };
 
   const handleAction = async (
     negotiationId: number,

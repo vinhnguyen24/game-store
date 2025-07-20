@@ -5,7 +5,6 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { FiShoppingCart, FiTag, FiList, FiEdit } from "react-icons/fi";
 import { NegotiationModal } from "@/components/NegotiationModal";
-import { apiFetch } from "@/lib/api";
 import { convertToShortText } from "@/helper/common";
 const BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL_DOMAIN || "http://localhost:1340";
@@ -137,12 +136,7 @@ interface Negotiation {
   id: number;
   buyerZalo: string;
   offeredPrice: number;
-  statusTransaction:
-    | "pending"
-    | "countered"
-    | "accepted"
-    | "rejected"
-    | "waiting_for_seller";
+  statusTransaction: "pending" | "accepted" | "rejected" | "waiting_for_seller";
   message: string;
   messageFromSeller: string;
   createdAt: string;
