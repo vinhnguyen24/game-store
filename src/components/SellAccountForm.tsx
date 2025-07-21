@@ -224,11 +224,6 @@ export function SellAccountForm({
         imageForm.append("files", file);
       });
 
-      // Debug FormData contents (optional)
-      for (const entry of imageForm.entries()) {
-        console.log("FormData entry:", entry[0], entry[1]);
-      }
-
       const uploadRes = await apiFetch<UploadResponse[]>("/upload", {
         method: "POST",
         data: imageForm,

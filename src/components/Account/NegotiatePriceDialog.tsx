@@ -43,7 +43,6 @@ export default function NegotiatePriceDialog({
 
     try {
       await onSubmit(numericPrice, message, phone);
-
       setPriceInput("");
       setDisplayPrice("");
       setMessage("");

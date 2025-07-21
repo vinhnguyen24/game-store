@@ -239,7 +239,6 @@ const ProfilePage = () => {
               return { ...listing, negotiations };
             })
           );
-          console.log(listingsWithNegotiations);
           setListListing(listingsWithNegotiations);
           setListSold(sold);
         }

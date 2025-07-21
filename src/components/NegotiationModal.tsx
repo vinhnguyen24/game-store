@@ -70,7 +70,9 @@ export const NegotiationModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] text-gray-500">
         <DialogHeader>
-          <DialogTitle>Negotiations for {accountTitle}</DialogTitle>
+          <DialogTitle>
+            Đề nghị thương lượng cho Account: {accountTitle}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 max-h-[60vh] overflow-y-auto p-4">
           {negotiations.length > 0 ? (

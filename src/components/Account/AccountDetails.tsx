@@ -20,7 +20,6 @@ import TitleHeader from "./TitleHeader";
 import NegotiatePriceDialog from "./NegotiatePriceDialog";
 import { useAuth } from "@/hooks/useAuth";
 import AuthModal from "../AuthModal";
-import { apiFetch } from "@/lib/api";
 import { toast } from "sonner";
 
 interface AccountProps {
@@ -50,24 +49,14 @@ const AccountDetailPage = ({ account }: AccountProps) => {
         alert("User not found!");
         return;
       }
-      const userInfo = JSON.parse(userData) as { id: number };
-      const params = {
-        data: {
-          buyerZalo: phone,
-          account: {
-            connect: [{ id: account.id }],
-          },
-          offeredPrice: price,
-          statusTransaction: "pending",
-          message: message,
-          buyer: {
-            connect: [{ id: userInfo.id }],
-          },
-        },
-      };
-      await apiFetch("/negotiations", {
+      await fetch("/api/negotiate", {
         method: "POST",
-        data: params,
+        body: JSON.stringify({
+          accountId: account.id,
+          price,
+          message,
+          buyerZalo: phone,
+        }),
       });
       toast.success(
         "Tạo thương lượng thành công, vui lòng chờ phản hồi từ người bán."
