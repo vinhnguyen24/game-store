@@ -97,7 +97,6 @@ export default function AuthModal({ children }: AuthModalProps) {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  // 👉 Nếu đã đăng nhập thì show dropdown menu
   if (user) {
     return (
       <DropdownMenu>
@@ -109,6 +108,9 @@ export default function AuthModal({ children }: AuthModalProps) {
         <DropdownMenuContent align="end" sideOffset={8}>
           <DropdownMenuItem onClick={() => router.push("/profile")}>
             Trang cá nhân
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/negotiations")}>
+            Thương lượng
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
             Đăng xuất

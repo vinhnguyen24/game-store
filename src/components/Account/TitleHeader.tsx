@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { FiArrowLeft } from "react-icons/fi";
 import { Button } from "@/components/ui/button";
-import { vesionMap } from "@/helper/common";
+import { versionMap } from "@/helper/common";
 
 interface TitleHeaderProps {
   id: number;
   title: string;
   version: VersionKey;
 }
-type VersionKey = keyof typeof vesionMap;
+type VersionKey = keyof typeof versionMap;
 const TitleHeader = ({ id, title, version }: TitleHeaderProps) => (
   <div className="mb-6 flex flex-wrap items-center gap-4 ">
     <Link href="/" passHref>
@@ -27,7 +27,7 @@ const TitleHeader = ({ id, title, version }: TitleHeaderProps) => (
       <span>
         Phiên bản:{" "}
         <span className="font-semibold text-blue-600">
-          {vesionMap[version]}
+          {versionMap[version]}
         </span>
       </span>
     </div>
