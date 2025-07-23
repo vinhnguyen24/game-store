@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ["localhost"], // Cho phép lấy ảnh từ localhost
+    domains: ["localhost", "res.cloudinary.com"], // Cho phép lấy ảnh từ localhost
   },
 };
 

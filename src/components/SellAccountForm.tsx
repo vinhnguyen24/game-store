@@ -18,15 +18,9 @@ import * as Checkbox from "@radix-ui/react-checkbox";
 import { Check, X } from "lucide-react";
 import { Account } from "@/types/account";
 import { ImageManagerModal } from "./ImageManagerModal";
-import { apiFetch } from "@/lib/api";
 import { getSuggestedPrice } from "./priceSuggestor";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
-interface UploadResponse {
-  id: number;
-  [key: string]: unknown; // For other properties that might exist
-}
 
 type SellAccountFormData = Omit<
   Account,
@@ -40,6 +34,11 @@ type CityThemes = {
   buff: string;
   image: {
     url: string;
+    formats: {
+      thumbnail: {
+        url: string;
+      };
+    };
   };
 }[];
 
@@ -219,22 +218,34 @@ export function SellAccountForm({
     if (imageFiles.length === 0) return [];
 
     try {
-      const imageForm = new FormData();
+      const formData = new FormData();
       imageFiles.forEach((file) => {
-        imageForm.append("files", file);
+        formData.append("files", file);
       });
 
-      const uploadRes = await apiFetch<UploadResponse[]>("/upload", {
+      const res = await fetch("/api/upload", {
         method: "POST",
-        data: imageForm,
+        body: formData,
       });
 
-      return uploadRes.map((file) => file.id);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Upload failed");
+      }
+
+      const result = await res.json();
+
+      if (result.success && result.data) {
+        return result.data.map((file: any) => file.id);
+      }
+
+      throw new Error("Invalid response format");
     } catch (error) {
       console.error("Image upload failed:", error);
       throw new Error("Failed to upload images");
     }
   };
+
   const filteredHouses = useMemo(() => {
     let data = citiThemes;
     if (filterType) data = data.filter((h) => h.type === filterType);
@@ -575,114 +586,125 @@ export function SellAccountForm({
       >
         <DialogPrimitive.Portal>
           <DialogPrimitive.Overlay className="fixed inset-0 bg-black/50" />
-          <DialogPrimitive.Content className="fixed z-[60] top-1/2 left-1/2 max-h-[90vh] w-[95vw] md:w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-4 shadow-lg overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <DialogPrimitive.Title className="text-lg font-semibold text-[#2c2f4b]">
-                Chọn Nhà Huyền Thoại
-              </DialogPrimitive.Title>
-              <DialogPrimitive.Close asChild>
-                <button className="p-1 rounded hover:bg-gray-100">
-                  <X className="w-4 h-4" />
-                </button>
-              </DialogPrimitive.Close>
-            </div>
+          <DialogPrimitive.Content className="fixed z-[60] top-1/2 left-1/2 max-h-[90vh] w-[95vw] md:w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white p-4 shadow-lg flex flex-col">
+            {/* Sticky Header & Buttons */}
+            <div className="sticky top-0 z-10 bg-white pb-3">
+              <div className="flex justify-between items-center mb-2">
+                <DialogPrimitive.Title className="text-lg font-semibold text-[#2c2f4b]">
+                  Chọn Nhà Huyền Thoại
+                </DialogPrimitive.Title>
+                <DialogPrimitive.Close asChild>
+                  <button className="p-1 rounded hover:bg-gray-100">
+                    <X className="w-4 h-4" />
+                  </button>
+                </DialogPrimitive.Close>
+              </div>
 
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm kiếm nhà huyền thoại..."
-              className="w-full mb-3 rounded border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-300 text-[#2c2f4b]"
-            />
+              <div className="flex justify-end gap-2 mb-3">
+                <div className="mt-4 text-sm text-gray-700">
+                  Đã chọn: {selectedLegendary.length} / {citiThemes.length}
+                </div>
+                <DialogPrimitive.Close asChild>
+                  <Button type="button" className="cursor-pointer">
+                    Xác nhận
+                  </Button>
+                </DialogPrimitive.Close>
+              </div>
 
-            <div className="flex gap-2 mb-4 text-sm">
-              {types.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setFilterType(t === filterType ? null : t)}
-                  className={`px-3 py-1 rounded-full capitalize ${
-                    filterType === t
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-800"
-                  }`}
-                >
-                  {houseTypeMap[t]}
-                </button>
-              ))}
-              {filterType && (
-                <button
-                  onClick={() => setFilterType(null)}
-                  className="text-xs text-gray-600 underline ml-2"
-                >
-                  Xóa bộ lọc
-                </button>
-              )}
-            </div>
+              {/* Search Input */}
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Tìm kiếm nhà huyền thoại..."
+                className="w-full mb-2 rounded border px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-300 text-[#2c2f4b]"
+              />
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {filteredHouses.map((house) => (
-                <label
-                  key={house.id}
-                  className={`relative rounded-lg border  ${
-                    selectedLegendary.includes(house.id)
-                      ? "border-blue-600 ring-2 ring-blue-300"
-                      : "border-gray-300"
-                  } p-2 flex flex-col items-center cursor-pointer`}
-                >
-                  <img
-                    src={`http://localhost:1340${house.image.url}`}
-                    alt={house.name}
-                    style={{ width: "auto", height: "160px" }}
-                    className="rounded"
-                  />
-                  <div className="mt-2 text-center text-[#2c2f4b]">
-                    <div className="font-medium text-sm">{house.name}</div>
-                    <div className="text-xs text-gray-500">{house.buff}</div>
-                    <span
-                      className={`mt-1 inline-block text-xs px-2 py-0.5 rounded ${
-                        house.type === "infantry"
-                          ? "bg-blue-100 text-blue-800"
-                          : house.type === "archer"
-                          ? "bg-red-100 text-red-800"
-                          : house.type === "cavalry"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-purple-100 text-purple-800"
-                      }`}
-                    >
-                      {houseTypeMap[house.type]}
-                    </span>
-                  </div>
-
-                  <Checkbox.Root
-                    checked={selectedLegendary.includes(house.id)}
-                    onCheckedChange={() => toggleLegendary(house.id)}
-                    className="absolute top-2 right-2 w-5 h-5 rounded border border-gray-400 bg-white data-[state=checked]:bg-blue-600"
+              {/* Filter Buttons */}
+              <div className="flex gap-2 mb-2 text-sm flex-wrap">
+                {types.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setFilterType(t === filterType ? null : t)}
+                    className={`px-3 py-1 rounded-full capitalize cursor-pointer ${
+                      filterType === t
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-200 text-gray-800"
+                    }`}
                   >
-                    <Checkbox.Indicator className="text-white">
-                      <Check className="w-4 h-4" />
-                    </Checkbox.Indicator>
-                  </Checkbox.Root>
-                </label>
-              ))}
+                    {houseTypeMap[t]}
+                  </button>
+                ))}
+                {filterType && (
+                  <button
+                    onClick={() => setFilterType(null)}
+                    className="text-xs text-gray-600 underline ml-2"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                )}
+              </div>
             </div>
 
-            <div className="mt-4 text-sm text-gray-700">
-              Đã chọn: {selectedLegendary.length} / {citiThemes.length}
-            </div>
+            {/* Scrollable list section */}
+            <div
+              className="overflow-y-auto mt-2 pr-1"
+              style={{ maxHeight: "calc(90vh - 210px)" }}
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {filteredHouses.map((house) => (
+                  <label
+                    key={house.id}
+                    className={`relative rounded-lg border ${
+                      selectedLegendary.includes(house.id)
+                        ? "border-blue-600 ring-2 ring-blue-300"
+                        : "border-gray-300"
+                    } p-2 flex flex-col items-center cursor-pointer`}
+                  >
+                    <img
+                      src={
+                        house?.image?.formats?.thumbnail?.url ||
+                        house?.image?.url
+                      }
+                      alt={house.name}
+                      style={{ width: "auto", height: "160px" }}
+                      className="rounded"
+                    />
+                    <div className="mt-2 text-center text-[#2c2f4b]">
+                      <div className="font-medium text-sm">{house.name}</div>
+                      <div className="text-xs text-gray-500">{house.buff}</div>
+                      <span
+                        className={`mt-1 inline-block text-xs px-2 py-0.5 rounded ${
+                          house.type === "infantry"
+                            ? "bg-blue-100 text-blue-800"
+                            : house.type === "archer"
+                            ? "bg-red-100 text-red-800"
+                            : house.type === "cavalry"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-purple-100 text-purple-800"
+                        }`}
+                      >
+                        {houseTypeMap[house.type]}
+                      </span>
+                    </div>
 
-            <div className="mt-4 flex justify-end gap-2">
-              <DialogPrimitive.Close asChild>
-                <Button type="button" variant="outline">
-                  Hủy
-                </Button>
-              </DialogPrimitive.Close>
-              <DialogPrimitive.Close asChild>
-                <Button type="button">Xác nhận</Button>
-              </DialogPrimitive.Close>
+                    <Checkbox.Root
+                      checked={selectedLegendary.includes(house.id)}
+                      onCheckedChange={() => toggleLegendary(house.id)}
+                      className="absolute top-2 right-2 w-5 h-5 rounded border border-gray-400 bg-white data-[state=checked]:bg-blue-600"
+                    >
+                      <Checkbox.Indicator className="text-white">
+                        <Check className="w-4 h-4" />
+                      </Checkbox.Indicator>
+                    </Checkbox.Root>
+                  </label>
+                ))}
+              </div>
             </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
+
       <ImageManagerModal
         isOpen={isImageModalOpen}
         onOpenChange={setIsImageModalOpen}

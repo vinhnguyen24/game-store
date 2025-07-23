@@ -26,9 +26,6 @@ interface AccountProps {
   account: Account;
 }
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL_DOMAIN || "http://localhost:1340";
-
 const AccountDetailPage = ({ account }: AccountProps) => {
   const { user } = useAuth();
   const [openDialog, setOpenDialog] = useState(false);
@@ -252,7 +249,7 @@ const AccountDetailPage = ({ account }: AccountProps) => {
             {account.images?.length ? (
               <div className="bg-white shadow-xl rounded-lg p-6">
                 <AccountCarousel
-                  images={account.images.map((img) => `${BASE_URL}${img.url}`)}
+                  images={account.images.map((img) => `${img.url}`)}
                 />
               </div>
             ) : null}

@@ -34,13 +34,13 @@ interface AccountQuickViewModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
 }
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL_DOMAIN || "http://localhost:1340";
+
 const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
   account,
   isOpen,
   onOpenChange,
 }) => {
+  console.log(account);
   if (!account) return null;
   const handlePurchase = () => {
     // Placeholder for purchase logic
@@ -74,7 +74,7 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
             {account.images?.length ? (
               <div className="bg-white shadow-xl rounded-lg p-6">
                 <AccountCarousel
-                  images={account.images.map((img) => `${BASE_URL}${img.url}`)}
+                  images={account.images.map((img) => `${img.url}`)}
                 />
               </div>
             ) : (

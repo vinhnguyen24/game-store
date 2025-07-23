@@ -7,7 +7,6 @@ import { Toaster } from "@/components/ui/sonner";
 import "keen-slider/keen-slider.min.css";
 import { Providers } from "./providers";
 import { CityThemeProvider } from "@/context/CityThemeContext"; // Use the Provider component
-import { apiFetch } from "@/lib/api";
 
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -38,10 +37,6 @@ export const metadata: Metadata = {
   description: "Shop bán account Rise of Kingdoms",
 };
 
-type ApiResponse<T> = {
-  data: T;
-};
-
 export type CityThemes = {
   id: number;
   name: string;
@@ -51,7 +46,7 @@ export type CityThemes = {
     url: string;
   };
 };
-
+const domain = process.env.BASE_URL;
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -60,15 +55,12 @@ export default async function RootLayout({
   let cityThemeData: CityThemes[] = [];
 
   try {
-    const res = await apiFetch<ApiResponse<CityThemes[]>>(
-      "/city-themes?populate=*&pagination[pageSize]=100",
-      { method: "GET" }
-    );
-    cityThemeData = res?.data || [];
+    const res = await fetch(`${domain}/api/city-themes`);
+    const json = await res.json();
+    cityThemeData = json.data || [];
   } catch (err) {
     console.error("Failed to fetch city themes", err);
   }
-
   return (
     <html lang="en">
       <body
