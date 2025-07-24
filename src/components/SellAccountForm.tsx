@@ -160,7 +160,7 @@ export function SellAccountForm({
 
     try {
       const user = JSON.parse(userData) as { id: number };
-
+      const username = JSON.parse(userData) as { username: string };
       // 1. Upload images if any
       const uploadedImageIds = await uploadImages();
 
@@ -177,6 +177,7 @@ export function SellAccountForm({
             connect: [{ id: user.id }],
             disconnect: [],
           },
+          sellerName: username.username,
           saleStatus: "pending",
           price: priceToShow,
           ...(uploadedImageIds.length > 0 && { images: uploadedImageIds }),

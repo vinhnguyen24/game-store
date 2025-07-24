@@ -54,9 +54,9 @@ export default function NegotiationsPage() {
         setData(buyerJson.data);
         setDataSeller(sellerJson.data);
         if (buyerJson.data.length > 0) {
-          setSelectedId(buyerJson.data[0].id);
+          setSelectedId(buyerJson.data[0]?.id);
         } else {
-          setSelectedId(sellerJson.data[0].id);
+          setSelectedId(sellerJson.data[0]?.id || null);
         }
       } catch (error) {
         console.error("Lỗi khi fetch negotiations:", error);

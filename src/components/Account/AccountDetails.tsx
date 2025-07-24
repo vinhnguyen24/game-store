@@ -21,15 +21,16 @@ import NegotiatePriceDialog from "./NegotiatePriceDialog";
 import { useAuth } from "@/hooks/useAuth";
 import AuthModal from "../AuthModal";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface AccountProps {
   account: Account;
+  hasNegotiation: boolean;
 }
 
-const AccountDetailPage = ({ account }: AccountProps) => {
+const AccountDetailPage = ({ account, hasNegotiation }: AccountProps) => {
   const { user } = useAuth();
   const [openDialog, setOpenDialog] = useState(false);
-  /** Split commanders string thành các dòng */
   const commanderLines = (account.commander ?? "")
     .split("|")
     .map((s) => s.trim())
@@ -229,7 +230,13 @@ const AccountDetailPage = ({ account }: AccountProps) => {
                 <span className="font-medium text-gray-700">
                   {account.sellerName}
                 </span>
-                {user ? (
+                {account.sellerName === user?.name || hasNegotiation ? (
+                  <Link href={`/negotiations`} passHref>
+                    <span className="italic text-blue-500 hover:underline cursor-pointer">
+                      Xem thương lượng
+                    </span>
+                  </Link>
+                ) : user ? (
                   <span
                     className="italic text-blue-500 hover:underline cursor-pointer"
                     onClick={() => setOpenDialog(true)}
