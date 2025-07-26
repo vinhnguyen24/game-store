@@ -152,7 +152,7 @@ interface Account {
   price: number;
   status: string;
   views: number;
-  saleStatus: "sale" | "sold";
+  saleStatus: "pending" | "sold" | "cancel";
   negotiations?: NegotiationResponse;
 }
 
@@ -218,10 +218,9 @@ const ProfilePage = () => {
         if (!res.ok) throw new Error("Lỗi khi lấy thông tin user");
 
         const data = (await res.json()) as UserApiResponse;
-
         if (data && data.accounts) {
           const listings = data.accounts.filter(
-            (item) => item.saleStatus === "sale"
+            (item) => item.saleStatus === "pending"
           );
           const sold = data.accounts.filter(
             (item) => item.saleStatus === "sold"

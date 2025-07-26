@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
 import {
   Dialog,
   DialogContent,
@@ -21,19 +20,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 
 interface FormState {
   identifier: string;
   password: string;
   username?: string;
   email?: string;
-}
-
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  // thêm các field khác nếu cần
 }
 
 type AuthModalProps = {
@@ -69,18 +62,26 @@ export default function AuthModal({ children }: AuthModalProps) {
           router.push("/profile");
         }
       } else {
-        const res = await apiFetch<{ jwt: string; user: User }>(
-          "/auth/local/register",
-          {
-            method: "POST",
-            data: {
-              username: form.username,
-              email: form.email,
-              password: form.password,
-            },
-          }
-        );
-        setPendingEmail(res.user.email);
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: form.username,
+            email: form.email,
+            password: form.password,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res || !res.ok) {
+          throw new Error(data.error || "Đăng ký thất bại");
+        }
+
+        toast.success("Tạo tài khoản thành công!");
+        setPendingEmail(data.user.email);
       }
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -193,7 +194,8 @@ export default function AuthModal({ children }: AuthModalProps) {
             {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
             {pendingEmail && (
               <p className="text-green-500 text-sm mb-2">
-                Tạo tài khoản thành công: {pendingEmail}
+                Tạo tài khoản thành công, vui lòng kiểm tra hộp thư để xác nhận
+                email
               </p>
             )}
             <Button

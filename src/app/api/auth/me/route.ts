@@ -18,5 +18,6 @@ export async function GET(req: NextRequest) {
   );
 
   const data = await strapiRes.json();
+
   return NextResponse.json(data);
 }

@@ -12,6 +12,7 @@ export async function GET(
 ) {
   const { id } = await params;
   const token = await getToken({ req });
+
   let userId = null;
   if (token) userId = token.sub;
 
@@ -24,6 +25,7 @@ export async function GET(
     );
     const account = res.data?.[0];
     let hasNegotiation = false;
+
     if (userId) {
       const negotiationRes = await apiFetch<StrapiResponse<any>>(
         `/negotiations?filters[account][id][$eq]=${account.id}&filters[user][id][$eq]=${userId}`,

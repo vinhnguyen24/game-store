@@ -6,6 +6,7 @@ import Image from "next/image";
 import clsx from "clsx";
 import { getNegotiationStatusUI } from "@/helper/common";
 import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 type Negotiation = {
   id: number;
@@ -23,6 +24,7 @@ type Negotiation = {
     price: number;
     thumbnail: { url: string };
   };
+  documentId: string;
   negotiation_messages: {
     id: number;
     sender: { id: number };
@@ -41,27 +43,54 @@ export default function NegotiationsPage() {
   const [message, setMessage] = useState<string>("");
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
-  useEffect(() => {
-    const fetchNegotiations = async () => {
-      try {
-        const [buyerRes, sellerRes] = await Promise.all([
-          fetch("/api/negotiations/all?role=buyer"),
-          fetch("/api/negotiations/all?role=seller"),
-        ]);
+  const fetchNegotiations = async () => {
+    try {
+      const [buyerRes, sellerRes] = await Promise.all([
+        fetch("/api/negotiations/all?role=buyer"),
+        fetch("/api/negotiations/all?role=seller"),
+      ]);
 
-        const buyerJson = await buyerRes.json();
-        const sellerJson = await sellerRes.json();
-        setData(buyerJson.data);
-        setDataSeller(sellerJson.data);
-        if (buyerJson.data.length > 0) {
-          setSelectedId(buyerJson.data[0]?.id);
-        } else {
-          setSelectedId(sellerJson.data[0]?.id || null);
-        }
-      } catch (error) {
-        console.error("Lỗi khi fetch negotiations:", error);
+      const buyerJson = await buyerRes.json();
+      const sellerJson = await sellerRes.json();
+      setData(buyerJson?.data);
+      setDataSeller(sellerJson?.data);
+
+      if (buyerJson?.data?.length > 0) {
+        setSelectedId(buyerJson?.data?.[0]?.id);
+      } else {
+        setSelectedId(sellerJson?.data?.[0]?.id || null);
       }
-    };
+    } catch (error) {
+      console.error("Lỗi khi fetch negotiations:", error);
+    }
+  };
+
+  const fetchMessagesById = async (id: string | undefined) => {
+    try {
+      const res = await fetch(`/api/negotiations/${id}`);
+      const json = await res.json();
+      const updated = json?.[0];
+
+      setData((prev) =>
+        prev.map((item) =>
+          item.documentId === id
+            ? { ...item, negotiation_messages: updated.negotiation_messages }
+            : item
+        )
+      );
+      setDataSeller((prev) =>
+        prev.map((item) =>
+          item.documentId === id
+            ? { ...item, negotiation_messages: updated.negotiation_messages }
+            : item
+        )
+      );
+    } catch (err) {
+      console.error("Lỗi khi lấy tin nhắn mới:", err);
+    }
+  };
+
+  useEffect(() => {
     fetchNegotiations();
   }, []);
 
@@ -71,7 +100,24 @@ export default function NegotiationsPage() {
     else setIsBuyer(false);
   }, [selectedId]);
 
-  const selectedNego = data.concat(dataSeller).find((n) => n.id === selectedId);
+  useEffect(() => {
+    if (!selectedId) return;
+
+    const interval = setInterval(() => {
+      fetchMessagesById(selectedNego?.documentId);
+    }, 10000); // mỗi 10 giây
+
+    return () => clearInterval(interval); // clear khi component unmount
+  }, [selectedId]);
+
+  const selectedNego = (data || [])
+    .concat(dataSeller || [])
+    .find((n) => n.id === selectedId);
+  const messages = selectedNego?.negotiation_messages || [];
+  const lastOffer = messages
+    .slice() // clone mảng để không làm thay đổi mảng gốc
+    .reverse()
+    .find((msg) => typeof msg.price !== "undefined");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, "");
@@ -79,12 +125,67 @@ export default function NegotiationsPage() {
     setPrice(formatted);
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const parsedPrice = parseInt(price.replace(/[^0-9]/g, ""));
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      return;
+    }
+
+    try {
+      await fetch("/api/negotiate", {
+        method: "POST",
+        body: JSON.stringify({
+          accountId: selectedId,
+          price: parsedPrice,
+          message,
+        }),
+      });
+      toast.success(
+        "Tạo thương lượng thành công, vui lòng chờ phản hồi từ người bán."
+      );
+
+      setPrice("");
+      setMessage("");
+      await fetchNegotiations();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Tạo thương lượng thất bại, vui lòng thử lại sau!");
+    }
+  };
+
+  const handleContinue = async () => {
+    try {
+      await fetch("/api/negotiate/seller-response", {
+        method: "POST",
+        body: JSON.stringify({
+          accountId: selectedId,
+          message,
+          negotiationId: selectedId,
+          price: lastOffer?.price,
+          type: "offer",
+        }),
+      });
+      toast.success(
+        "Thương lượng thành công, vui lòng chờ người mua phản hồi!"
+      );
+
+      setPrice("");
+      setMessage("");
+      await fetchNegotiations();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Phản hồi thất bại, vui lòng thử lại sau!");
+    }
+  };
+
   return (
     <div className="flex h-[calc(100vh-112px)] m-4 border rounded-xl shadow overflow-hidden text-gray-700">
       {/* Sidebar list */}
       <aside className="w-1/3 border-r overflow-y-auto bg-white">
         <h2 className="p-4 font-bold border-b bg-gray-50 text-lg">Đàm phán</h2>
-        {data.concat(dataSeller).map((nego) => {
+        {(data || []).concat(dataSeller || []).map((nego) => {
           const lastOffer = [...nego.negotiation_messages]
             .reverse()
             .find((msg) => msg.price !== undefined);
@@ -103,7 +204,11 @@ export default function NegotiationsPage() {
               )}
             >
               <Image
-                src={`http://localhost:1340${nego.account.thumbnail.url}`}
+                src={
+                  nego?.account?.thumbnail?.url
+                    ? `${process.env.NEXT_PUBLIC_API_BASE_URL_DOMAIN}${nego?.account?.thumbnail?.url}`
+                    : "/images/default-account.jpg"
+                }
                 alt={nego.account.title}
                 width={48}
                 height={48}
@@ -159,6 +264,9 @@ export default function NegotiationsPage() {
                 )
                 .map((msg) => {
                   const isSelf = msg.sender.id === currentUserId;
+                  const isSellerMessage = isBuyer
+                    ? msg.sender.id !== currentUserId
+                    : msg.sender.id === currentUserId;
                   return (
                     <div
                       key={msg.id}
@@ -176,15 +284,22 @@ export default function NegotiationsPage() {
                         )}
                       >
                         {msg.content && (
-                          <div className="text-gray-800">
-                            Lời nhắn: {msg.content}
-                          </div>
+                          <div className="text-gray-800">{msg.content}</div>
                         )}
-                        {msg.price && (
-                          <div className="font-semibold mt-1">
-                            Đề nghị: {msg.price.toLocaleString()}đ
-                          </div>
-                        )}
+                        {!isSellerMessage
+                          ? msg.price && (
+                              <div
+                                className={
+                                  "font-semibold mt-1 " +
+                                  (msg.price === lastOffer?.price
+                                    ? ""
+                                    : "line-through")
+                                }
+                              >
+                                Đề nghị: {msg.price.toLocaleString()}đ
+                              </div>
+                            )
+                          : null}
                         <div className="text-[10px] text-gray-500 mt-1">
                           {new Date(msg.createdAt).toLocaleString()}
                         </div>
@@ -198,10 +313,7 @@ export default function NegotiationsPage() {
             <footer className="p-4 bg-white border-t">
               {isBuyer ? (
                 <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    // TODO: gửi message
-                  }}
+                  onSubmit={handleSubmit}
                   className="flex flex-col gap-2 border-t pt-4 mt-4"
                 >
                   <div className="flex items-center gap-2 w-full">
@@ -228,7 +340,7 @@ export default function NegotiationsPage() {
                   />
                   <button
                     type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
                   >
                     Gửi đề nghị
                   </button>
@@ -251,7 +363,7 @@ export default function NegotiationsPage() {
 
                     <div className="flex gap-2">
                       <button
-                        onClick={() => {}}
+                        onClick={handleContinue}
                         className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer"
                       >
                         Tiếp tục thương lượng

@@ -1,5 +1,6 @@
 import AccountDetailPage from "@/components/Account/AccountDetails";
 import { Account } from "@/types/account";
+import { getAccountWithNegotiation } from "@/lib/account";
 
 type Params = Promise<{ id: string }>;
 
@@ -10,11 +11,9 @@ type AccountResponse = {
 export default async function page({ params }: { params: Params }) {
   const { id } = await params;
   let data: AccountResponse | null = null;
+
   try {
-    const res = await fetch(`${process.env.BASE_URL}/api/accounts/${id}`, {
-      method: "GET",
-    });
-    data = await res.json();
+    data = await getAccountWithNegotiation(id);
   } catch (err) {
     console.error("Error fetching account:", err);
   }
