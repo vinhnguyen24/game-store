@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { requestPasswordReset } from "@/lib/api";
 
 interface FormState {
   identifier: string;
@@ -42,6 +43,12 @@ export default function AuthModal({ children }: AuthModalProps) {
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+
+  // Forgot password state
+
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotMessage, setForgotMessage] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -92,6 +99,17 @@ export default function AuthModal({ children }: AuthModalProps) {
     }
 
     setLoading(false);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) return;
+
+    try {
+      await requestPasswordReset(forgotEmail);
+      setForgotMessage("Vui lòng kiểm tra email để đặt lại mật khẩu.");
+    } catch (err) {
+      setForgotMessage("Không thể gửi email. Vui lòng thử lại sau.");
+    }
   };
 
   const handleInputChange = (key: keyof FormState, value: string) => {
@@ -148,27 +166,71 @@ export default function AuthModal({ children }: AuthModalProps) {
           </TabsList>
 
           <TabsContent value="login">
-            <Input
-              placeholder="Email hoặc Tên người dùng"
-              value={form.identifier}
-              onChange={(e) => handleInputChange("identifier", e.target.value)}
-              className="mb-3 text-gray-500"
-            />
-            <Input
-              placeholder="Mật khẩu"
-              type="password"
-              value={form.password}
-              onChange={(e) => handleInputChange("password", e.target.value)}
-              className="mb-4 text-gray-500"
-            />
-            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-            <Button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full"
-            >
-              {loading ? "Đang xử lý..." : "Đăng nhập"}
-            </Button>
+            {showForgotPassword ? (
+              <>
+                <Input
+                  placeholder="Nhập email của bạn"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="mb-3 text-gray-500"
+                />
+                {forgotMessage && (
+                  <p className="text-sm mb-2 text-green-600">{forgotMessage}</p>
+                )}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setShowForgotPassword(false)}
+                    className="text-sm cursor-pointer"
+                  >
+                    Quay lại
+                  </Button>
+                  <Button
+                    onClick={handleForgotPassword}
+                    disabled={!forgotEmail}
+                  >
+                    Gửi yêu cầu
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Input
+                  placeholder="Email hoặc Tên người dùng"
+                  value={form.identifier}
+                  onChange={(e) =>
+                    handleInputChange("identifier", e.target.value)
+                  }
+                  className="mb-3 text-gray-500"
+                />
+                <Input
+                  placeholder="Mật khẩu"
+                  type="password"
+                  value={form.password}
+                  onChange={(e) =>
+                    handleInputChange("password", e.target.value)
+                  }
+                  className="mb-2 text-gray-500"
+                />
+                {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full mb-2"
+                >
+                  {loading ? "Đang xử lý..." : "Đăng nhập"}
+                </Button>
+                <button
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setForgotMessage(null);
+                  }}
+                  className="text-sm text-blue-600 hover:underline cursor-pointer"
+                >
+                  Quên mật khẩu?
+                </button>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="register">

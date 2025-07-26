@@ -34,7 +34,6 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
   }
 
   const res = await fetch(BASE_URL + endpoint, fetchOptions);
-
   let json;
   let parseErrorOccurred = false;
 
@@ -66,4 +65,18 @@ export async function apiFetch<TResponse = unknown, TData = unknown>(
   }
 
   return json as TResponse;
+}
+
+export async function requestPasswordReset(email: string) {
+  const res = await fetch(`${BASE_URL}/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to request password reset");
+  }
+
+  return res.json();
 }

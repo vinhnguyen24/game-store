@@ -40,7 +40,6 @@ const AccountQuickViewModal: React.FC<AccountQuickViewModalProps> = ({
   isOpen,
   onOpenChange,
 }) => {
-  console.log(account);
   if (!account) return null;
   const handlePurchase = () => {
     // Placeholder for purchase logic

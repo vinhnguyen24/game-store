@@ -32,7 +32,8 @@ export type NegotiationStatus =
   | "rejected"
   | "expired"
   | "cancelled"
-  | "completed";
+  | "completed"
+  | "unavailable";
 
 type StatusUI = {
   label: string;
@@ -70,6 +71,11 @@ export const getNegotiationStatusUI = (status: NegotiationStatus): StatusUI => {
       return {
         label: "Hoàn tất giao dịch",
         color: "text-blue-600",
+      };
+    case "unavailable":
+      return {
+        label: "Không có sẵn",
+        color: "text-yellow-600",
       };
   }
 };

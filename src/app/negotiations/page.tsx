@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { getNegotiationStatusUI } from "@/helper/common";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Negotiation = {
   id: number;
@@ -16,12 +17,14 @@ type Negotiation = {
     | "rejected"
     | "expired"
     | "cancelled"
-    | "completed";
+    | "completed"
+    | "unavailable";
   finalPrice?: number;
   account: {
     id: number;
     title: string;
     price: number;
+    documentId: string;
     thumbnail: { url: string };
   };
   documentId: string;
@@ -31,7 +34,9 @@ type Negotiation = {
     content?: string;
     price?: number;
     createdAt: string;
+    type: string;
   }[];
+  zaloGroupLink: string;
 };
 
 export default function NegotiationsPage() {
@@ -41,8 +46,23 @@ export default function NegotiationsPage() {
   const [price, setPrice] = useState<string>("");
   const [isBuyer, setIsBuyer] = useState(false);
   const [message, setMessage] = useState<string>("");
+  const [isRejected, setIsRejected] = useState<boolean>(false);
+  const [isAccept, setIsAccept] = useState<boolean>(false);
+  const [isUnavailable, setIsUnavailable] = useState<boolean>(false);
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [onConfirmAction, setOnConfirmAction] = useState<() => void>(() => {});
+  const [resetFlag, setResetFlag] = useState<number>(1);
+
+  const confirm = (message: string, action: () => void) => {
+    setConfirmMessage(message);
+    setOnConfirmAction(() => action);
+    setConfirmOpen(true);
+  };
+
   const fetchNegotiations = async () => {
     try {
       const [buyerRes, sellerRes] = await Promise.all([
@@ -68,20 +88,18 @@ export default function NegotiationsPage() {
   const fetchMessagesById = async (id: string | undefined) => {
     try {
       const res = await fetch(`/api/negotiations/${id}`);
-      const json = await res.json();
-      const updated = json?.[0];
-
+      const updated = await res.json();
       setData((prev) =>
         prev.map((item) =>
           item.documentId === id
-            ? { ...item, negotiation_messages: updated.negotiation_messages }
+            ? { ...item, negotiation_messages: updated?.negotiation_messages }
             : item
         )
       );
       setDataSeller((prev) =>
         prev.map((item) =>
           item.documentId === id
-            ? { ...item, negotiation_messages: updated.negotiation_messages }
+            ? { ...item, negotiation_messages: updated?.negotiation_messages }
             : item
         )
       );
@@ -95,27 +113,32 @@ export default function NegotiationsPage() {
   }, []);
 
   useEffect(() => {
-    const selectedNego = data.find((n) => n.id === selectedId);
-    if (selectedNego) setIsBuyer(true);
+    const isBuyer = data.find((n) => n.id === selectedId);
+    if (isBuyer) setIsBuyer(true);
     else setIsBuyer(false);
-  }, [selectedId]);
+    const selectedNego = (data || [])
+      .concat(dataSeller || [])
+      .find((n) => n.id === selectedId);
+    setIsRejected(selectedNego?.statusTransaction === "rejected");
+    setIsAccept(selectedNego?.statusTransaction === "accepted");
+    setIsUnavailable(selectedNego?.statusTransaction === "unavailable");
+  }, [selectedId, resetFlag]);
 
   useEffect(() => {
     if (!selectedId) return;
-
     const interval = setInterval(() => {
-      fetchMessagesById(selectedNego?.documentId);
+      if (!(isRejected || isAccept || isUnavailable))
+        fetchMessagesById(selectedNego?.documentId);
     }, 10000); // mỗi 10 giây
-
     return () => clearInterval(interval); // clear khi component unmount
-  }, [selectedId]);
+  }, [selectedId, isRejected, isAccept, isUnavailable]);
 
   const selectedNego = (data || [])
     .concat(dataSeller || [])
     .find((n) => n.id === selectedId);
   const messages = selectedNego?.negotiation_messages || [];
   const lastOffer = messages
-    .slice() // clone mảng để không làm thay đổi mảng gốc
+    .slice()
     .reverse()
     .find((msg) => typeof msg.price !== "undefined");
 
@@ -160,7 +183,6 @@ export default function NegotiationsPage() {
       await fetch("/api/negotiate/seller-response", {
         method: "POST",
         body: JSON.stringify({
-          accountId: selectedId,
           message,
           negotiationId: selectedId,
           price: lastOffer?.price,
@@ -180,13 +202,51 @@ export default function NegotiationsPage() {
     }
   };
 
+  const doReject = async () => {
+    await fetch("/api/negotiate/seller-response", {
+      method: "POST",
+      body: JSON.stringify({
+        accountId: selectedId,
+        message,
+        negotiationId: selectedId,
+        negotiationDoc: selectedNego?.documentId,
+        price: lastOffer?.price,
+        type: "reject",
+      }),
+    });
+    toast.success("Từ chối thương lượng.");
+    setPrice("");
+    setMessage("");
+    await fetchNegotiations();
+    setResetFlag(resetFlag + 1);
+  };
+
+  const doAccept = async () => {
+    await fetch("/api/negotiate/seller-response", {
+      method: "POST",
+      body: JSON.stringify({
+        message,
+        negotiationId: selectedId,
+        negotiationDoc: selectedNego?.documentId,
+        price: lastOffer?.price,
+        type: "accept",
+        accountId: selectedNego?.account?.id,
+      }),
+    });
+    toast.success("Chấp nhận thương lượng.");
+    setPrice("");
+    setMessage("");
+    await fetchNegotiations();
+    setResetFlag(resetFlag + 1);
+  };
+
   return (
     <div className="flex h-[calc(100vh-112px)] m-4 border rounded-xl shadow overflow-hidden text-gray-700">
       {/* Sidebar list */}
       <aside className="w-1/3 border-r overflow-y-auto bg-white">
         <h2 className="p-4 font-bold border-b bg-gray-50 text-lg">Đàm phán</h2>
         {(data || []).concat(dataSeller || []).map((nego) => {
-          const lastOffer = [...nego.negotiation_messages]
+          const lastOffer = [...nego?.negotiation_messages]
             .reverse()
             .find((msg) => msg.price !== undefined);
 
@@ -283,9 +343,12 @@ export default function NegotiationsPage() {
                             : "bg-gray-200 text-left"
                         )}
                       >
-                        {msg.content && (
+                        {msg.content ? (
                           <div className="text-gray-800">{msg.content}</div>
+                        ) : (
+                          <div className="text-gray-800">{msg.type}</div>
                         )}
+
                         {!isSellerMessage
                           ? msg.price && (
                               <div
@@ -310,87 +373,132 @@ export default function NegotiationsPage() {
             </section>
 
             {/* Input */}
-            <footer className="p-4 bg-white border-t">
-              {isBuyer ? (
-                <form
-                  onSubmit={handleSubmit}
-                  className="flex flex-col gap-2 border-t pt-4 mt-4"
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <label
-                      htmlFor="offer-price"
-                      className="font-medium whitespace-nowrap"
-                    >
-                      Giá bạn đề nghị
-                    </label>
-                    <input
-                      id="offer-price"
-                      placeholder="VD: 95000000"
-                      value={price}
-                      onChange={handleChange}
-                      className="border p-2 rounded flex-grow"
-                      required
-                    />
-                  </div>
-                  <textarea
-                    placeholder="Lời nhắn đi kèm (không bắt buộc)"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="border p-2 rounded"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
+            {isRejected ? (
+              <div className="p-4 bg-white border">Giao dịch đã bị từ chối</div>
+            ) : isUnavailable ? (
+              <div className="p-4 bg-white border">
+                Account đang không có sẵn, hãy quay lại sau
+              </div>
+            ) : isAccept ? (
+              <div className="p-4 bg-white border">
+                Đã xác nhận giao dịch. Hãy tham gia nhóm zalo này:{" "}
+                {selectedNego?.zaloGroupLink ? (
+                  <Link
+                    href={selectedNego?.zaloGroupLink}
+                    className="text-blue-600 underline hover:text-blue-800"
                   >
-                    Gửi đề nghị
-                  </button>
-                </form>
-              ) : (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    // TODO: gửi message
-                  }}
-                  className="flex flex-col gap-2 mt-4"
-                >
-                  <div className="space-y-2 mt-4">
+                    {selectedNego?.zaloGroupLink}
+                  </Link>
+                ) : (
+                  "Đang cập nhật..."
+                )}
+              </div>
+            ) : (
+              <footer className="p-4 bg-white border-t">
+                {isBuyer ? (
+                  <form
+                    onSubmit={handleSubmit}
+                    className="flex flex-col gap-2 border-t pt-4 mt-4"
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <label
+                        htmlFor="offer-price"
+                        className="font-medium whitespace-nowrap"
+                      >
+                        Giá bạn đề nghị
+                      </label>
+                      <input
+                        id="offer-price"
+                        placeholder="VD: 95000000"
+                        value={price}
+                        onChange={handleChange}
+                        className="border p-2 rounded flex-grow"
+                        required
+                      />
+                    </div>
                     <textarea
+                      placeholder="Lời nhắn đi kèm (không bắt buộc)"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Nhập nội dung phản hồi"
-                      className="w-full border p-2 rounded"
+                      className="border p-2 rounded"
                     />
+                    <button
+                      type="submit"
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 cursor-pointer"
+                    >
+                      Gửi đề nghị
+                    </button>
+                  </form>
+                ) : (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      // TODO: gửi message
+                    }}
+                    className="flex flex-col gap-2 mt-4"
+                  >
+                    <div className="space-y-2 mt-4">
+                      <textarea
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                        placeholder="Nhập nội dung phản hồi"
+                        className="w-full border p-2 rounded"
+                      />
 
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleContinue}
-                        className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer"
-                      >
-                        Tiếp tục thương lượng
-                      </button>
-                      <button
-                        onClick={() => {}}
-                        className="bg-red-500 text-white px-4 py-2 rounded cursor-pointer"
-                      >
-                        Từ chối
-                      </button>
-                      <button
-                        onClick={() => {}}
-                        className="bg-green-500 text-white px-4 py-2 rounded cursor-pointer"
-                      >
-                        Chấp nhận
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleContinue}
+                          className="bg-blue-500 text-white px-4 py-2 rounded cursor-pointer"
+                        >
+                          Tiếp tục thương lượng
+                        </button>
+                        <button
+                          onClick={() =>
+                            confirm(
+                              "Bạn có chắc muốn từ chối thương lượng?",
+                              doReject
+                            )
+                          }
+                          className="bg-red-500 text-white px-4 py-2 rounded cursor-pointer"
+                        >
+                          Từ chối
+                        </button>
+                        <button
+                          onClick={() =>
+                            confirm(
+                              `Chấp nhận mức giá ${lastOffer?.price?.toLocaleString()}đ và bắt đầu giao dịch?`,
+                              doAccept
+                            )
+                          }
+                          className="bg-green-500 text-white px-4 py-2 rounded cursor-pointer"
+                        >
+                          Chấp nhận
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </form>
-              )}
-            </footer>
+                  </form>
+                )}
+              </footer>
+            )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500">
             Chọn một cuộc đàm phán để xem chi tiết
           </div>
         )}
+        <ConfirmDialog
+          open={confirmOpen}
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={async () => {
+            try {
+              await onConfirmAction();
+              setConfirmOpen(false);
+            } catch (err) {
+              toast.error("Lỗi khi thực hiện hành động. Vui lòng thử lại.");
+            }
+          }}
+          message={confirmMessage}
+        />
       </main>
     </div>
   );

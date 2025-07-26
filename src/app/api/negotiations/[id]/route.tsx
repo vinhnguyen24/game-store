@@ -20,13 +20,12 @@ export async function GET(
 
   try {
     const res = await apiFetch<StrapiResponse<any>>(
-      `/negotiations?filters[documentId][$eq]=${id}&populate[negotiation_messages][populate]=sender`,
+      `/negotiations/${id}?populate[negotiation_messages][populate]=sender`,
       {
         method: "GET",
         token: token.jwt,
       }
     );
-    console.log(res.data);
     return NextResponse.json(res.data);
   } catch (error) {
     console.error("Error fetching negotiation:", error);
